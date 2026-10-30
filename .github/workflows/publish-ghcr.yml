@@ -1,0 +1,38 @@
+name: Publish image to GitHub Container Registry
+
+on:
+  push:
+    branches:
+      - V3
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set image tag
+        # 1. parse config.ts and extract app version
+        # 2. set time based tag
+        run: |
+          echo "APP_VERSION=$(head -n 1 ./app/api/config.ts | tr -d "\";= " | sed "s/exportconstCURRENT_APP_VERSION//g")" >> $GITHUB_ENV
+          echo "IMAGE_DATE=$(date +'%d-%m-%Y')" >> $GITHUB_ENV
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/anixartweb:latest
+            ghcr.io/${{ github.repository_owner }}/anixartweb:${{ env.APP_VERSION }}-${{ env.IMAGE_DATE }}

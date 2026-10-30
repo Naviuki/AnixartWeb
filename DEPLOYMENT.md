@@ -144,6 +144,34 @@ Useful links:
 - [Converter from docker run command to docker compose syntax](https://it-tools.tech/docker-run-to-docker-compose-converter)
 - [How to setup Traefik + custom domain + SSL](https://letmegooglethat.com/?q=how+to+setup+traefik+with+custom+domain+and+ssl+certificate+from+lets+encrypt%3F)
 
+## GitHub Container Registry
+
+GitHub can host the ready-made Docker image of the project in its own registry `ghcr.io`. The image is rebuilt automatically by the `publish-ghcr.yml` workflow on every push to the `V3` branch (changes in `app/**`, `Dockerfile`, `middleware.ts`, `next.config.mjs`).
+
+Requirements:
+
+- GitHub Actions enabled in the repository
+
+Instructions:
+
+1. push the changes to the `V3` branch
+2. wait for the `Publish image to GitHub Container Registry` workflow to finish (Actions tab)
+3. run the client:
+
+    `docker run -d --restart always --name anix -p 3000:3000 ghcr.io/naviuki/anixartweb:latest`
+
+The image is also available in the repository Packages section.
+
+## Why not GitHub Pages
+
+GitHub Pages only serves static files, but the client needs a running server:
+
+- dynamic routes: `/release/[id]`, `/profile/[id]`, `/related/[id]`, `/collection/[id]`
+- the `/api/proxy/*` middleware that adds the required headers for the Anixart API
+- `output: "standalone"` in next.config
+
+Static export would break the API, authorization and release pages, so for a live URL use Vercel (recommended), Netlify or the Docker image from the section above.
+
 ## pm2
 
 Requirements:

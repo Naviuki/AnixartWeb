@@ -144,6 +144,34 @@
 - [Конвертер из команды docker run в синтакс для docker compose](https://it-tools.tech/docker-run-to-docker-compose-converter)
 - [Как настроить Traefik + свой домен + SSL](https://letmegooglethat.com/?q=how+to+setup+traefik+with+custom+domain+and+ssl+certificate+from+lets+encrypt%3F)
 
+## GitHub Container Registry
+
+GitHub умеет хранить готовый Docker-образ проекта в своём реестре `ghcr.io`. Образ автоматически пересобирается workflow `publish-ghcr.yml` при каждом пуше в ветку `V3` (изменения в `app/**`, `Dockerfile`, `middleware.ts`, `next.config.mjs`).
+
+Требования:
+
+- в репозитории включён GitHub Actions
+
+Инструкция:
+
+1. запушить изменения в ветку `V3`
+2. дождаться завершения workflow `Publish image to GitHub Container Registry` (вкладка Actions)
+3. запустить клиент:
+
+    `docker run -d --restart always --name anix -p 3000:3000 ghcr.io/naviuki/anixartweb:latest`
+
+Образ также доступен в разделе Packages репозитория.
+
+## Почему не GitHub Pages
+
+GitHub Pages размещает только статические файлы, а клиенту нужен работающий сервер:
+
+- динамические маршруты: `/release/[id]`, `/profile/[id]`, `/related/[id]`, `/collection/[id]`
+- middleware-прокси `/api/proxy/*`, который добавляет обязательные заголовки для API Anixart
+- `output: "standalone"` в next.config
+
+Статический экспорт сломал бы API, авторизацию и страницы релизов, поэтому для живого адреса используйте Vercel (рекомендуется), Netlify или Docker-образ из раздела выше.
+
 ## pm2
 
 Требования:
