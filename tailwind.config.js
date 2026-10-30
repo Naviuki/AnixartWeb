@@ -21,6 +21,19 @@ module.exports = {
   darkMode: "selector",
   theme: {
     extend: {
+      colors: {
+        acc: "var(--acc)",
+        bg: "var(--bg)",
+        s1: "var(--s1)",
+        s2: "var(--s2)",
+        bd: "var(--bd)",
+        t1: "var(--t1)",
+        t2: "var(--t2)",
+        t3: "var(--t3)",
+      },
+      borderRadius: {
+        rd: "var(--r)",
+      },
       animation: {
         bg_zoom: "bg_zoom 150ms linear",
         bg_zoom_rev: "bg_zoom_rev 150ms linear",

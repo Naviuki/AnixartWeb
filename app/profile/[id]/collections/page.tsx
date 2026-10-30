@@ -38,15 +38,13 @@ export default async function Collections({ params }) {
 
   if (error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Ошибка</h1>
-          <p className="text-lg">
-            Произошла ошибка при загрузке коллекций пользователя. Попробуйте
-            обновить страницу или зайдите позже.
-          </p>
-        </div>
-      </main>
+      <div className="empty">
+        <div className="empty-t">Ошибка</div>
+        <p>
+          Произошла ошибка при загрузке коллекций пользователя. Попробуйте
+          обновить страницу или зайдите позже.
+        </p>
+      </div>
     );
   }
 

@@ -3,7 +3,8 @@
 import { Spinner } from "#/components/Spinner/Spinner";
 import { useUserStore } from "#/store/auth";
 import { useUserPlayerPreferencesStore } from "#/store/player";
-import { Button, Card, Dropdown, DropdownItem } from "flowbite-react";
+import { Dropdown, DropdownItem } from "flowbite-react";
+import { Icon } from "#/components/Icon/Icon";
 import { ENDPOINTS } from "#/api/config";
 import { useState, useEffect } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -280,19 +281,27 @@ export const ReleasePlayer = (props: { id: number }) => {
   }
 
   return (
-    <Card>
+    <div className="box" style={{ padding: 12 }}>
       {!voiceoverInfo || !sourcesInfo || !episodeInfo ?
-        <div className="flex items-center justify-center w-full aspect-video">
+        <div
+          className="empty"
+          style={{ marginBottom: 0, aspectRatio: "16 / 9", justifyContent: "center" }}
+        >
           {!error ?
             <Spinner />
           : <p>{error}</p>}
         </div>
       : <>
-          <div className="flex flex-wrap gap-2">
+          <div className="chiprow" style={{ marginBottom: 10 }}>
             <Dropdown
               label={`Озвучка: ${selectedVoiceover.name}`}
-              color="blue"
               theme={DropdownTheme}
+              renderTrigger={() => (
+                <button type="button" className="chip">
+                  Озвучка: {selectedVoiceover.name}
+                  <Icon name="chevron" size={14} />
+                </button>
+              )}
             >
               {voiceoverInfo.map((voiceover: any) => (
                 <DropdownItem
@@ -307,8 +316,13 @@ export const ReleasePlayer = (props: { id: number }) => {
             </Dropdown>
             <Dropdown
               label={`Плеер: ${selectedSource.name}`}
-              color="blue"
               theme={DropdownTheme}
+              renderTrigger={() => (
+                <button type="button" className="chip">
+                  Плеер: {selectedSource.name}
+                  <Icon name="chevron" size={14} />
+                </button>
+              )}
             >
               {sourcesInfo.map((source: any) => (
                 <DropdownItem
@@ -320,16 +334,18 @@ export const ReleasePlayer = (props: { id: number }) => {
               ))}
             </Dropdown>
           </div>
-          <div className="aspect-video">
+
+          <div className="player-frame">
             {selectedEpisode ?
               <iframe
                 allowFullScreen={true}
                 src={selectedEpisode.url}
-                className="w-full h-full rounded-md"
+                className="w-full h-full"
               ></iframe>
-            : <p>Ошибка загрузки плеера</p>}
+            : <p className="muted">Ошибка загрузки плеера</p>}
           </div>
-          <div>
+
+          <div style={{ marginTop: 10 }}>
             <Swiper
               modules={[Navigation, Mousewheel, Scrollbar]}
               spaceBetween={8}
@@ -350,56 +366,54 @@ export const ReleasePlayer = (props: { id: number }) => {
                 } as React.CSSProperties
               }
             >
-              {episodeInfo.map((episode: any) => (
-                <SwiperSlide
-                  key={`episode_${episode.position}`}
-                  style={{ maxWidth: "fit-content" }}
-                  className="pb-2"
-                >
-                  <Button
-                    color={
-                      selectedEpisode.position === episode.position ?
-                        "blue"
-                      : "light"
-                    }
-                    theme={{ base: "w-full disabled:opacity-100" }}
-                    onClick={() => {
-                      setSelectedEpisode(episode);
-                      _addToHistory(episode);
-                    }}
-                    disabled={selectedEpisode.position === episode.position}
+              {episodeInfo.map((episode: any) => {
+                const isCurrent =
+                  selectedEpisode.position === episode.position;
+                const isWatched =
+                  episode.is_watched ||
+                  getAnonCurrentEpisodeWatched(
+                    props.id,
+                    selectedSource.id,
+                    selectedVoiceover.id,
+                    episode.position
+                  );
+                return (
+                  <SwiperSlide
+                    key={`episode_${episode.position}`}
+                    style={{ maxWidth: "fit-content" }}
+                    className="pb-2"
                   >
-                    {episode.name ?
-                      episode.name
-                    : `${
-                        (
-                          !["Sibnet", "Sibnet (не работает)"].includes(
-                            selectedSource.name
-                          )
-                        ) ?
-                          episode.position
-                        : episode.position + 1
-                      } серия`
-                    }
-                    {(
-                      episode.is_watched ||
-                      getAnonCurrentEpisodeWatched(
-                        props.id,
-                        selectedSource.id,
-                        selectedVoiceover.id,
-                        episode.position
-                      )
-                    ) ?
-                      <span className="w-5 h-5 ml-2 iconify material-symbols--check-circle"></span>
-                    : <span className="w-5 h-5 ml-2 opacity-10 iconify material-symbols--check-circle"></span>
-                    }
-                  </Button>
-                </SwiperSlide>
-              ))}
+                    <button
+                      type="button"
+                      className={`ep ${isCurrent ? "on" : ""} ${
+                        isWatched ? "done" : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedEpisode(episode);
+                        _addToHistory(episode);
+                      }}
+                      disabled={isCurrent}
+                    >
+                      <span className="ep-check" />
+                      <span className="ep-n">
+                        {episode.name ?
+                          episode.name
+                        : `${
+                            !["Sibnet", "Sibnet (не работает)"].includes(
+                              selectedSource.name
+                            ) ?
+                              episode.position
+                            : episode.position + 1
+                          } серия`}
+                      </span>
+                    </button>
+                  </SwiperSlide>
+                );
+              })}
             </Swiper>
           </div>
         </>
       }
-    </Card>
+    </div>
   );
 };

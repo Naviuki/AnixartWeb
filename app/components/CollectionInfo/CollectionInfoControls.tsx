@@ -1,11 +1,12 @@
 "use client";
-import { Card, Button, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { useState } from "react";
 import { useUserStore } from "#/store/auth";
 import { ENDPOINTS } from "#/api/config";
 import { useRouter } from "next/navigation";
 import { tryCatchAPI } from "#/api/utils";
 import { toast } from "react-toastify";
+import { Icon } from "#/components/Icon/Icon";
 
 export const CollectionInfoControls = (props: {
   isFavorite: boolean;
@@ -126,45 +127,47 @@ export const CollectionInfoControls = (props: {
   }
 
   return (
-    <Card className="w-full h-fit ">
-      <Button
-        color={"blue"}
+    <section className="box collview-controls">
+      <button
+        type="button"
+        className={`btn ${isFavorite ? "g" : "p"}`}
         onClick={() => _addToFavorite()}
         disabled={isUpdating}
       >
-        <span
-          className={`iconify w-6 h-6 mr-2 ${
-            isFavorite ? "mdi--heart" : "mdi--heart-outline"
-          }`}
-        ></span>
+        <Icon name="heart" size={16} fill={isFavorite} />
         {!isFavorite ? "Добавить в избранное" : "Убрать из избранного"}
-      </Button>
+      </button>
+
       {props.isPrivate && (
-        <p>Это приватная коллекция, доступ к ней имеете только вы</p>
+        <p className="hint" style={{ marginTop: 10 }}>
+          Это приватная коллекция, доступ к ней имеете только вы
+        </p>
       )}
+
       {userStore.user && userStore.user.id == props.authorId && (
-        <div className="flex flex-wrap gap-2">
-          <Button
-            color={"blue"}
-            className="w-full sm:max-w-64"
+        <div className="collview-actions">
+          <button
+            type="button"
+            className="btn g"
             onClick={() =>
               router.push("/collections/create?mode=edit&id=" + props.id)
             }
             disabled={isUpdating}
           >
-            <span className="w-6 h-6 mr-2 iconify mdi--pencil"></span>{" "}
+            <Icon name="edit" size={16} />
             Редактировать
-          </Button>
-          <Button
-            color={"red"}
-            className="w-full sm:max-w-64"
+          </button>
+          <button
+            type="button"
+            className="btn danger"
             onClick={() => _deleteCollection()}
             disabled={isUpdating}
           >
-            <span className="w-6 h-6 mr-2 iconify mdi--trash"></span> Удалить
-          </Button>
+            <Icon name="trash" size={16} />
+            Удалить
+          </button>
         </div>
       )}
-    </Card>
+    </section>
   );
 };

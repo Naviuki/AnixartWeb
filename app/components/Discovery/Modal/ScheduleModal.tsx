@@ -3,9 +3,9 @@
 import { ENDPOINTS } from "#/api/config";
 import { useSWRfetcher } from "#/api/utils";
 import useSWR from "swr";
-import { Modal, ModalBody, ModalHeader } from "flowbite-react";
 import { Spinner } from "#/components/Spinner/Spinner";
 import { ReleaseCourusel } from "#/components/ReleaseCourusel/ReleaseCourusel";
+import { Icon } from "#/components/Icon/Icon";
 type ModalProps = {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
@@ -22,21 +22,36 @@ export const ScheduleModal = ({ isOpen, setIsOpen }: ModalProps) => {
     }
   );
 
+  if (!isOpen) return null;
+
   return (
-    <Modal
-      show={isOpen}
-      onClose={() => setIsOpen(false)}
-      size="7xl"
-      dismissible
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
     >
-      <ModalHeader>Расписание</ModalHeader>
-      <ModalBody>
+      <div className="mb" style={{ width: "min(1100px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Расписание</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
         {!error ?
           isLoading ?
-            <div className="flex items-center justify-center w-full h-64">
+            <div className="empty" style={{ marginBottom: 0 }}>
               <Spinner />
             </div>
-          : <div className="flex flex-col gap-4">
+          : <div className="schedule">
               <ReleaseCourusel
                 content={data.monday}
                 sectionTitle={"Понедельник"}
@@ -45,10 +60,7 @@ export const ScheduleModal = ({ isOpen, setIsOpen }: ModalProps) => {
                 content={data.tuesday}
                 sectionTitle={"Вторник"}
               />
-              <ReleaseCourusel
-                content={data.wednesday}
-                sectionTitle={"Среда"}
-              />
+              <ReleaseCourusel content={data.wednesday} sectionTitle={"Среда"} />
               <ReleaseCourusel
                 content={data.thursday}
                 sectionTitle={"Четверг"}
@@ -63,9 +75,15 @@ export const ScheduleModal = ({ isOpen, setIsOpen }: ModalProps) => {
                 sectionTitle={"Воскресенье"}
               />
             </div>
-
-        : "Ошибка загрузки"}
-      </ModalBody>
-    </Modal>
+        : <div className="empty" style={{ marginBottom: 0 }}>
+            <span className="empty-ic">
+              <Icon name="info" size={32} />
+            </span>
+            <div className="empty-t">Ошибка загрузки</div>
+            <p>Не удалось загрузить расписание. Попробуйте позже.</p>
+          </div>
+        }
+      </div>
+    </div>
   );
 };

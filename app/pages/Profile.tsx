@@ -18,6 +18,7 @@ import { ProfileReleaseHistory } from "#/components/Profile/Profile.ReleaseHisto
 import { ProfileEditModal } from "#/components/Profile/Profile.EditModal";
 import { ShareButton } from "#/components/FloatingToolbar/ShareButton";
 import { FloatingToolbar } from "#/components/FloatingToolbar/FloatingToolbar";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfilePage = (props: any) => {
   const authUser = useUserStore();
@@ -41,92 +42,100 @@ export const ProfilePage = (props: any) => {
 
   if (!user && !error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
+      <div className="empty">
         <Spinner />
-      </main>
+        <p>Загружаем профиль</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Ошибка</h1>
-          <p className="text-lg">
-            Произошла ошибка при загрузке профиля. Попробуйте обновить страницу
-            или зайдите позже.
-          </p>
-        </div>
-      </main>
+      <div className="empty">
+        <span className="empty-ic">
+          <Icon name="info" size={32} />
+        </span>
+        <div className="empty-t">Ошибка</div>
+        <p>
+          Произошла ошибка при загрузке профиля. Попробуйте обновить страницу или
+          зайдите позже.
+        </p>
+      </div>
     );
   }
 
   return (
     <>
-      <div className="flex flex-col gap-2">
-        <ProfileBannedBanner
-          is_banned={user.is_banned}
-          is_perm_banned={user.is_perm_banned}
-          ban_reason={user.ban_reason}
-          ban_expires={user.ban_expires}
-        />
-        <ProfilePrivacyBanner
-          is_privacy={
-            user.is_stats_hidden ||
-            user.is_counts_hidden ||
-            user.is_social_hidden
-          }
-          is_me_blocked={user.is_me_blocked}
-        />
-      </div>
-      <div
-        className={`grid grid-cols-1 gap-2 lg:grid-cols-2 ${
-          (
-            user.is_banned ||
-            user.is_perm_banned ||
-            user.is_stats_hidden ||
-            user.is_counts_hidden ||
-            user.is_social_hidden
-          ) ?
-            "mt-4"
-          : ""
-        } mb-4`}
-      >
-        <div className="flex flex-col gap-2">
-          <ProfileUser
-            avatar={user.avatar || ""}
-            login={user.login || ""}
-            status={user.status || ""}
-            roles={user.roles || []}
-            rating={user.rating_score || 0}
-            isMyProfile={isMyProfile || false}
-            isVerified={user.is_verified || false}
-            isOnline={user.is_online || false}
-            isSponsor={user.is_sponsor || false}
-            isBlocked={user.is_blocked || false}
-            socials={{
-              vk: user.vk_page || null,
-              tg: user.tg_page || null,
-              tt: user.tt_page || null,
-              inst: user.inst_page || null,
-              discord: user.discord_page || null,
-            }}
-            is_social_hidden={user.is_social_hidden}
+      {(user.is_banned ||
+        user.is_perm_banned ||
+        user.is_stats_hidden ||
+        user.is_counts_hidden ||
+        user.is_social_hidden) && (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <ProfileBannedBanner
+            is_banned={user.is_banned}
+            is_perm_banned={user.is_perm_banned}
+            ban_reason={user.ban_reason}
+            ban_expires={user.ban_expires}
           />
-          {authUser.token && (
-            <ProfileActions
-              isMyProfile={isMyProfile}
-              profile_id={user.id}
-              isFriendRequestsDisallowed={user.is_friend_requests_disallowed}
-              friendStatus={user.friend_status}
-              my_profile_id={authUser.user.id}
-              token={authUser.token}
-              is_me_blocked={user.is_me_blocked}
-              is_blocked={user.is_blocked}
-              edit_isOpen={isOpen}
-              edit_setIsOpen={setIsOpen}
-            />
-          )}
+          <ProfilePrivacyBanner
+            is_privacy={
+              user.is_stats_hidden ||
+              user.is_counts_hidden ||
+              user.is_social_hidden
+            }
+            is_me_blocked={user.is_me_blocked}
+          />
+        </div>
+      )}
+
+      <ProfileUser
+        avatar={user.avatar || ""}
+        login={user.login || ""}
+        status={user.status || ""}
+        roles={user.roles || []}
+        rating={user.rating_score || 0}
+        isMyProfile={isMyProfile || false}
+        isVerified={user.is_verified || false}
+        isOnline={user.is_online || false}
+        isSponsor={user.is_sponsor || false}
+        isBlocked={user.is_blocked || false}
+        socials={{
+          vk: user.vk_page || null,
+          tg: user.tg_page || null,
+          tt: user.tt_page || null,
+          inst: user.inst_page || null,
+          discord: user.discord_page || null,
+        }}
+        is_social_hidden={user.is_social_hidden}
+      />
+
+      {authUser.token && (
+        <div style={{ marginBottom: 14 }}>
+          <ProfileActions
+            isMyProfile={isMyProfile}
+            profile_id={user.id}
+            isFriendRequestsDisallowed={user.is_friend_requests_disallowed}
+            friendStatus={user.friend_status}
+            my_profile_id={authUser.user.id}
+            token={authUser.token}
+            is_me_blocked={user.is_me_blocked}
+            is_blocked={user.is_blocked}
+            edit_isOpen={isOpen}
+            edit_setIsOpen={setIsOpen}
+          />
+        </div>
+      )}
+
+      <div className="prof-grid">
+        <div className="prof-main">
           {!user.is_counts_hidden && (
             <ProfileActivity
               profile_id={user.id}
@@ -141,7 +150,7 @@ export const ProfilePage = (props: any) => {
             />
           )}
           {!user.is_stats_hidden && (
-            <div className="flex-col hidden gap-2 lg:flex">
+            <div className="desk-only">
               {user.votes && user.votes.length > 0 && (
                 <ProfileReleaseRatings
                   ratings={user.votes}
@@ -152,41 +161,41 @@ export const ProfilePage = (props: any) => {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2">
-          {!user.is_stats_hidden && (
-            <>
-              <ProfileStats
-                lists={[
-                  user.watching_count,
-                  user.plan_count,
-                  user.completed_count,
-                  user.hold_on_count,
-                  user.dropped_count,
-                ]}
-                watched_count={user.watched_episode_count}
-                watched_time={user.watched_time}
-                profile_id={user.id}
-                preferred_genres={user.preferred_genres || []}
-                preferred_audiences={user.preferred_audiences || []}
-                preferred_themes={user.preferred_themes || []}
-              />
-              <ProfileWatchDynamic watchDynamic={user.watch_dynamics || []} />
-              <div className="flex flex-col gap-2 lg:hidden">
-                {user.votes && user.votes.length > 0 && (
-                  <ProfileReleaseRatings
-                    ratings={user.votes}
-                    token={authUser.token}
-                    profile_id={user.id}
-                  />
-                )}
-              </div>
-              {user.history && user.history.length > 0 && (
-                <ProfileReleaseHistory history={user.history} />
+
+        {!user.is_stats_hidden && (
+          <aside className="prof-side">
+            <ProfileStats
+              lists={[
+                user.watching_count,
+                user.plan_count,
+                user.completed_count,
+                user.hold_on_count,
+                user.dropped_count,
+              ]}
+              watched_count={user.watched_episode_count}
+              watched_time={user.watched_time}
+              profile_id={user.id}
+              preferred_genres={user.preferred_genres || []}
+              preferred_audiences={user.preferred_audiences || []}
+              preferred_themes={user.preferred_themes || []}
+            />
+            <ProfileWatchDynamic watchDynamic={user.watch_dynamics || []} />
+            <div className="mob-only">
+              {user.votes && user.votes.length > 0 && (
+                <ProfileReleaseRatings
+                  ratings={user.votes}
+                  token={authUser.token}
+                  profile_id={user.id}
+                />
               )}
-            </>
-          )}
-        </div>
+            </div>
+            {user.history && user.history.length > 0 && (
+              <ProfileReleaseHistory history={user.history} />
+            )}
+          </aside>
+        )}
       </div>
+
       <ProfileEditModal
         isOpen={isOpen && isMyProfile}
         setIsOpen={setIsOpen}

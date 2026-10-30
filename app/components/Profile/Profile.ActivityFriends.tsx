@@ -5,9 +5,9 @@ import "swiper/css/mousewheel";
 import "swiper/css/scrollbar";
 import { Navigation, Mousewheel, Scrollbar } from "swiper/modules";
 import Link from "next/link";
-import { Avatar, Button } from "flowbite-react";
 import { useState } from "react";
 import { ProfileFriendModal } from "./Profile.FriendsModal";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileActivityFriends = (props: {
   content: any;
@@ -19,7 +19,7 @@ export const ProfileActivityFriends = (props: {
 
   return (
     <>
-      <div className="max-w-full">
+      <div style={{ maxWidth: "100%" }}>
         <Swiper
           modules={[Navigation, Mousewheel, Scrollbar]}
           spaceBetween={8}
@@ -47,32 +47,42 @@ export const ProfileActivityFriends = (props: {
                 <SwiperSlide
                   key={`friend-prev-${profile.id}`}
                   style={{ width: "fit-content" }}
-                  className="px-2 py-4"
                 >
-                  <Link href={`/profile/${profile.id}`}>
-                    <div className="flex items-center gap-2">
-                      <Avatar
-                        img={profile.avatar}
-                        size="md"
-                        rounded={true}
-                        bordered={true}
-                        color={profile.is_online ? "success" : "light"}
-                        className="flex-shrink-0"
+                  <Link href={`/profile/${profile.id}`} className="friend-tile">
+                    <span className="friend-ava">
+                      {profile.avatar ?
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={profile.avatar} alt="" />
+                      : (profile.login ? profile.login[0].toUpperCase() : "А")}
+                      <i
+                        className="friend-dot"
+                        style={{
+                          background:
+                            profile.is_online ?
+                              "var(--rate-5)"
+                            : "var(--t3)",
+                        }}
                       />
-                      <p className="text-lg">{profile.login}</p>
-                    </div>
+                    </span>
+                    <span className="friend-name">{profile.login}</span>
                   </Link>
                 </SwiperSlide>
               );
             })}
           {(props.content && props.content.length > 0) || props.isMyProfile ?
-            <SwiperSlide style={{ width: "fit-content" }} className="px-2 py-4">
-              <Button onClick={() => setIsFriendModalOpen(true)}>
-                <p className="text-lg">Все друзья {props.isMyProfile ? "и заявки" : ""}</p>
-                <span className="w-8 h-8 iconify mdi--arrow-right dark:fill-white"></span>
-              </Button>
+            <SwiperSlide style={{ width: "fit-content" }}>
+              <button
+                type="button"
+                className="friend-tile more"
+                onClick={() => setIsFriendModalOpen(true)}
+              >
+                <Icon name="users" size={20} />
+                <span className="friend-name">
+                  Все друзья {props.isMyProfile ? "и заявки" : ""}
+                </span>
+              </button>
             </SwiperSlide>
-          : <p className="text-lg">У пользователя нет друзей</p>}
+          : <p className="muted">У пользователя нет друзей</p>}
         </Swiper>
       </div>
       <ProfileFriendModal

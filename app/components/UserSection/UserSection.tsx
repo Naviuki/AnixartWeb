@@ -1,31 +1,33 @@
-import { Avatar, Card } from "flowbite-react";
 import Link from "next/link";
+import { Icon } from "#/components/Icon/Icon";
 
 export const UserSection = (props: { sectionTitle?: string; content: any }) => {
   return (
-    <section>
+    <section className="sec">
       {props.sectionTitle && (
-        <div className="flex justify-between px-4 py-2 border-b-2 border-black dark:border-white">
-          <h1 className="font-bold text-md sm:text-xl md:text-lg xl:text-xl">
-            {props.sectionTitle}
-          </h1>
+        <div className="sh">
+          <h2>{props.sectionTitle}</h2>
         </div>
       )}
-      <div className="m-4">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {props.content.map((user) => {
-            return (
-              <Link href={`/profile/${user.id}`} key={user.id}>
-                <Card>
-                  <div className="flex items-center gap-4">
-                    <Avatar img={user.avatar} alt="" size="lg" rounded={true} className="flex-shrink-0"/>
-                    <p className="text-xl font-medium text-gray-900 dark:text-white line-clamp-1">{user.login}</p>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+      <div className="usergrid">
+        {props.content.map((user) => {
+          return (
+            <Link href={`/profile/${user.id}`} key={user.id} className="row userrow">
+              <span className="mini-ava">
+                {user.avatar && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatar} alt="" />
+                )}
+              </span>
+              <span className="row-body">
+                <span className="row-title">{user.login}</span>
+              </span>
+              <span className="row-right">
+                <Icon name="chevron" size={16} />
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

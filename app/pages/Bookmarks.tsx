@@ -8,6 +8,7 @@ import { BookmarksList, useSWRfetcher } from "#/api/utils";
 import { ENDPOINTS } from "#/api/config";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Icon } from "#/components/Icon/Icon";
 
 export function BookmarksPage(props: { profile_id?: number }) {
   const token = useUserStore((state) => state.token);
@@ -73,8 +74,9 @@ export function BookmarksPage(props: { profile_id?: number }) {
           !watchedData ||
           !delayedData ||
           !abandonedData) && (
-          <div className="flex items-center justify-center min-w-full min-h-screen">
+          <div className="empty">
             <Spinner />
+            <p>Загружаем закладки</p>
           </div>
         )}
       {watchingData &&
@@ -141,15 +143,16 @@ export function BookmarksPage(props: { profile_id?: number }) {
         watchedError ||
         delayedError ||
         abandonedError) && (
-        <main className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">Ошибка</h1>
-            <p className="text-lg">
-              Произошла ошибка при загрузке закладок. Попробуйте обновить
-              страницу или зайдите позже.
-            </p>
-          </div>
-        </main>
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="info" size={32} />
+          </span>
+          <div className="empty-t">Ошибка</div>
+          <p>
+            Произошла ошибка при загрузке закладок. Попробуйте обновить страницу
+            или зайдите позже.
+          </p>
+        </div>
       )}
     </>
   );

@@ -1,12 +1,13 @@
 "use client";
 
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader, Textarea, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { ENDPOINTS } from "#/api/config";
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
 import { toast } from "react-toastify";
 import { tryCatchAPI } from "#/api/utils";
 import { useUserStore } from "#/store/auth";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileEditStatusModal = (props: {
   isOpen: boolean;
@@ -89,41 +90,61 @@ export const ProfileEditStatusModal = (props: {
     props.setIsOpen(false);
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"4xl"}
-    >
-      <ModalHeader>Изменить статус</ModalHeader>
-      <ModalBody>
-        <Textarea
-          disabled={loading}
-          rows={3}
-          id="status"
-          className="w-full"
-          name="status"
-          onChange={(e) => handleInput(e)}
-          value={_status}
-          maxLength={80}
-        />
-        <p className="text-sm text-right text-gray-500 dark:text-gray-300">
-          {_stringLength}/80
-        </p>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          color="blue"
-          onClick={() => _setStatusSetting()}
-          disabled={loading}
-        >
-          Сохранить
-        </Button>
-        <Button color="red" onClick={() => props.setIsOpen(false)}>
-          Отмена
-        </Button>
-      </ModalFooter>
-    </Modal>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(520px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>Изменить статус</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="form">
+          <textarea
+            disabled={loading}
+            rows={3}
+            id="status"
+            name="status"
+            onChange={(e) => handleInput(e)}
+            value={_status}
+            maxLength={80}
+          />
+          <p className="hint" style={{ textAlign: "right" }}>
+            {_stringLength}/80
+          </p>
+        </div>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => props.setIsOpen(false)}
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => _setStatusSetting()}
+            disabled={loading}
+          >
+            <Icon name="check" size={16} />
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

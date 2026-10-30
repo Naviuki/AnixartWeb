@@ -1,4 +1,3 @@
-import { Card, Button, Avatar } from "flowbite-react";
 import { unixToDate } from "#/api/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,42 +13,40 @@ export const CollectionInfoBasics = (props: {
   updateDate: number;
 }) => {
   return (
-    <Card className="flex-1 w-full">
-      <div className="flex flex-col justify-start gap-2">
-        <div className="flex flex-col items-end justify-between sm:items-center sm:flex-row">
-          <div className="flex flex-col gap-1">
-            <p>создана: {unixToDate(props.creationDate, "full")}</p>
-            <p>обновлена: {unixToDate(props.updateDate, "full")}</p>
-          </div>
-          <Link href={`/profile/${props.authorId}`}>
-            <Avatar
-              img={props.authorAvatar}
-              rounded={true}
-              bordered={true}
-              size="md"
-              className="flex-row-reverse gap-2"
-            >
-              <div className="font-medium dark:text-white">
-                <div className="text-lg">{props.authorLogin}</div>
-                <div className="text-right text-gray-500">Автор</div>
-              </div>
-            </Avatar>
-          </Link>
-        </div>
-        <div className="min-w-full aspect-video">
-          <Image
-            src={props.image}
-            width={725}
-            height={400}
-            className="w-full rounded-lg"
-            alt=""
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <p className="text-xl font-bold">{props.title}</p>
-          <p className="whitespace-pre-wrap">{props.description}</p>
+    <section className="box collview-main">
+      <div className="collview-cover">
+        <Image
+          src={props.image}
+          fill
+          sizes="(max-width: 1023px) 100vw, 720px"
+          className="object-cover"
+          alt=""
+        />
+      </div>
+
+      <h1 className="collview-title">{props.title}</h1>
+      {props.description && (
+        <p className="collview-desc">{props.description}</p>
+      )}
+
+      <div className="collview-meta">
+        <Link href={`/profile/${props.authorId}`} className="collview-author">
+          <span className="mini-ava">
+            {props.authorAvatar && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={props.authorAvatar} alt="" />
+            )}
+          </span>
+          <span style={{ minWidth: 0 }}>
+            <span className="collview-author-name">{props.authorLogin}</span>
+            <span className="collview-author-role">Автор</span>
+          </span>
+        </Link>
+        <div className="collview-dates">
+          <span>создана: {unixToDate(props.creationDate, "full")}</span>
+          <span>обновлена: {unixToDate(props.updateDate, "full")}</span>
         </div>
       </div>
-    </Card>
+    </section>
   );
 };

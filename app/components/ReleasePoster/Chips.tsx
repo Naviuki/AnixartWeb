@@ -1,5 +1,4 @@
-import { stat } from "fs";
-import { Chip } from "../Chip/Chip";
+import { Icon } from "#/components/Icon/Icon";
 
 interface ChipProps {
   settings?: any;
@@ -19,6 +18,22 @@ const STATUS_ID_TO_STR = {
   1: "Вышел",
   2: "Выходит",
   3: "Анонс",
+};
+
+const LIST_COLORS: Record<string, string> = {
+  Смотрю: "var(--st-watching)",
+  "В планах": "var(--st-planned)",
+  Просмотрено: "var(--st-watched)",
+  Отложено: "var(--st-delayed)",
+  Брошено: "var(--st-dropped)",
+};
+
+const gradeColor = (grade: number) => {
+  if (grade >= 4.5) return "var(--rate-5)";
+  if (grade >= 3.5) return "var(--rate-4)";
+  if (grade >= 2.5) return "var(--rate-3)";
+  if (grade >= 1.5) return "var(--rate-2)";
+  return "var(--rate-1)";
 };
 
 export const ReleaseChips = ({
@@ -46,53 +61,68 @@ export const ReleaseChips = ({
   };
 
   const status_name =
-    status_id != 0 ? STATUS_ID_TO_STR[status_id] : status ? STATUS_ID_TO_STR[status.id] : null;
+    status_id != 0 ?
+      STATUS_ID_TO_STR[status_id]
+    : status ?
+      STATUS_ID_TO_STR[status.id]
+    : null;
   const ep_rel = episodes_released || "?";
   const ep_tot = episodes_total || "?";
   const episode_count = `${ep_rel}${ep_rel == "?" ? "" : "/"}${ep_tot} эп.`;
 
   return (
     <div
-      className={`${chipSettings.enabled ? "flex" : "hidden"} ${chipSettings.column ? "flex-col" : "flex-row"} gap-1 flex-wrap`}
+      className={`${chipSettings.enabled ? "flex" : "hidden"} ${
+        chipSettings.column || column ? "column" : ""
+      } rcard-chips`}
     >
       {!chipSettings.gradeHidden && grade ?
-        <Chip
-          className={`${chipSettings.column ? "" : "w-12"}`}
-          bg_color={
-            grade == 0 ? "hidden"
-            : grade < 2 ?
-              "bg-red-500"
-            : grade < 3 ?
-              "bg-orange-500"
-            : grade < 4 ?
-              "bg-yellow-500"
-            : "bg-green-500"
-          }
-          name={`${grade}`}
-        />
+        <span className="badge soft">
+          <i
+            className="dot"
+            style={{ background: gradeColor(Number(grade)) }}
+          />
+          {grade}
+        </span>
       : ""}
 
       {!chipSettings.categoryHidden && category && (
-        <Chip name={category.name} />
-      )}
-      {!chipSettings.listHidden && user_list && (
-        <Chip bg_color={user_list.bg_color} name={user_list.name} />
-      )}
-      {!chipSettings.favHidden && is_favorite && (
-        <div className="flex items-center justify-center bg-pink-500 rounded-sm">
-          <span className="w-3 px-4 py-2.5 text-white sm:px-4 sm:py-3 xl:px-6 xl:py-4 iconify mdi--heart"></span>
-        </div>
+        <span className="badge soft">{category.name}</span>
       )}
 
-      {!chipSettings.statusHidden && status && (
-        <Chip
-          name={status_name}
-          name_2={
-            status_name == "Вышел" || status_name == "Анонс" ?
-              `${ep_tot} эп.`
-            : episode_count
-          }
-        />
+      {!chipSettings.listHidden && user_list && (
+        <span
+          className="badge"
+          style={{
+            background: LIST_COLORS[user_list.name] || "var(--acc)",
+            borderColor: "transparent",
+            color: "#fff",
+          }}
+        >
+          {user_list.name}
+        </span>
+      )}
+
+      {!chipSettings.favHidden && is_favorite && (
+        <span
+          className="badge"
+          style={{
+            background: "var(--st-favorite)",
+            borderColor: "transparent",
+            color: "#fff",
+          }}
+          title="В избранном"
+        >
+          <Icon name="heart" size={12} />
+        </span>
+      )}
+
+      {!chipSettings.statusHidden && status_name && (
+        <span className="badge soft">
+          {status_name}
+          {!chipSettings.episodesHidden &&
+            ` · ${status_name == "Вышел" || status_name == "Анонс" ? ep_tot : episode_count}`}
+        </span>
       )}
     </div>
   );

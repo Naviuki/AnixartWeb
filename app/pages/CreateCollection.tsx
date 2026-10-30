@@ -4,24 +4,15 @@ import { useUserStore } from "#/store/auth";
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ENDPOINTS } from "#/api/config";
-import {
-  Button,
-  Card,
-  Checkbox,
-  FileInput,
-  Label,
-  Modal,
-  ModalHeader,
-  Textarea,
-  TextInput,
-  useThemeMode,
-} from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { PosterWithStuff } from "#/components/ReleasePoster/PosterWithStuff";
 import { CropModal } from "#/components/CropModal/CropModal";
 import { b64toBlob, tryCatchAPI } from "#/api/utils";
 
 import { Spinner } from "#/components/Spinner/Spinner";
 import { toast } from "react-toastify";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 const postFetcher = async (url: string, payload: string) => {
   const { data, error } = await tryCatchAPI(
@@ -347,157 +338,119 @@ export const CreateCollectionPage = () => {
 
   return (
     <>
-      <Card>
-        <p className="text-xl font-bold">
-          {edit ? "Редактирование коллекции" : "Создание коллекции"}
-        </p>
-        <form
-          className="flex flex-col w-full gap-2 lg:items-center lg:flex-row"
-          onSubmit={(e) => submit(e)}
-        >
-          <Label
-            htmlFor="dropzone-file"
-            className="flex flex-col items-center w-full sm:max-w-[600px] h-[337px] border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600"
-          >
-            <div className="flex flex-col items-center justify-center max-w-[595px] h-[inherit] rounded-[inherit] pt-5 pb-6 overflow-hidden">
-              {
-                !imageUrl ?
-                  <>
-                    <svg
-                      className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 16"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"
-                      />
-                    </svg>
-                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                      <span className="font-semibold">
-                        Нажмите для загрузки
-                      </span>{" "}
-                      или перетащите файл
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PNG или JPG (Макс. 600x337 пикселей)
-                    </p>
-                  </>
-                  // eslint-disable-next-line @next/next/no-img-element
-                : <img
-                    src={imageUrl}
-                    className="object-cover w-[inherit] h-[inherit]"
-                    alt=""
-                  />
+      <PageHead
+        title={edit ? "Редактирование коллекции" : "Создание коллекции"}
+        subtitle="Обложка, название, описание и релизы"
+      />
 
-              }
-            </div>
-            <FileInput
+      <form className="form" onSubmit={(e) => submit(e)}>
+        <div className="coll-form-grid">
+          <label htmlFor="dropzone-file" className="upload">
+            {!imageUrl ?
+              <span className="upload-empty">
+                <Icon name="photo" size={28} />
+                <span className="upload-t">Нажмите для загрузки</span>
+                <span className="upload-s">PNG или JPG (макс. 600x337)</span>
+              </span>
+              // eslint-disable-next-line @next/next/no-img-element
+            : <img src={imageUrl} className="upload-img" alt="Обложка" />}
+            <input
               id="dropzone-file"
-              className="hidden"
+              type="file"
+              className="sr-only"
               accept="image/jpg, image/jpeg, image/png"
               onChange={(e) => {
                 handleImagePreview(e);
               }}
             />
-          </Label>
-          <div className="flex-1">
-            <div className="block mb-2">
-              <Label htmlFor="title">
-                Название (минимум 10, максимум 60 символов)
-              </Label>
-            </div>
-            <TextInput
+          </label>
+          <div>
+            <label htmlFor="title">
+              Название (минимум 10, максимум 60 символов)
+            </label>
+            <input
               id="title"
               name="title"
               type="text"
-              sizing="md"
-              className="w-full"
               required={true}
               onChange={(e) => handleInput(e)}
               value={collectionInfo.title}
               maxLength={60}
             />
-            <p className="text-sm text-gray-500 dark:text-gray-300">
-              {stringLength.title}/60
-            </p>
-            <div className="block mt-2 mb-2">
-              <Label htmlFor="description">
-                Описание (максимум 1000 символов)
-              </Label>
-            </div>
-            <Textarea
+            <p className="hint">{stringLength.title}/60</p>
+            <label htmlFor="description">
+              Описание (максимум 1000 символов)
+            </label>
+            <textarea
               rows={4}
               id="description"
-              className="w-full"
               name="description"
               onChange={(e) => handleInput(e)}
               value={collectionInfo.description}
               maxLength={1000}
             />
-            <p className="text-sm text-gray-500 dark:text-gray-300">
-              {stringLength.description}/1000
-            </p>
-            <div className="mt-2">
-              <div className="flex items-center gap-1">
-                <Checkbox
-                  id="private"
-                  name="private"
-                  color="blue"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                />
-                <Label htmlFor="private">Приватная коллекция</Label>
-              </div>
-            </div>
-            <Button
-              color={"blue"}
-              className="mt-4"
+            <p className="hint">{stringLength.description}/1000</p>
+            <label className="check">
+              <input
+                type="checkbox"
+                name="private"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+              />
+              <span>Приватная коллекция</span>
+            </label>
+            <button
               type="submit"
+              className="btn p"
+              style={{ marginTop: 14 }}
               disabled={isSending}
             >
+              <Icon name={edit ? "check" : "plus"} size={16} />
               {edit ? "Обновить" : "Создать"}
-            </Button>
+            </button>
           </div>
-        </form>
-      </Card>
-      <div className="mt-4">
-        <div className="flex justify-between px-4 py-2 border-b-2 border-black dark:border-white">
-          <h1 className="font-bold text-md sm:text-xl md:text-lg xl:text-xl">
-            {"Релизов в коллекции: " + addedReleases.length}/100
-          </h1>
-          <Button
-            color={"blue"}
-            size={"xs"}
+        </div>
+      </form>
+      <section className="sec">
+        <div className="sh">
+          <h2>Релизов в коллекции: {addedReleases.length}/100</h2>
+          <button
+            type="button"
+            className="btn g sm"
             onClick={() => setReleasesEditModalOpen(!releasesEditModalOpen)}
           >
+            <Icon name="plus" size={16} />
             Добавить
-          </Button>
+          </button>
         </div>
-        <div className="m-4">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        {addedReleases.length > 0 ?
+          <div className="grid">
             {addedReleases.map((release) => {
               return (
-                <div key={release.id} className="relative w-full h-full group">
-                  <button
-                    className="absolute inset-0 z-30 text-black transition-opacity bg-white rounded-lg opacity-0 group-hover:opacity-75"
-                    onClick={() => _deleteRelease(release)}
-                  >
-                    Удалить
-                  </button>
+                <div key={release.id} className="coll-pick">
                   <PosterWithStuff {...release} />
+                  <button
+                    type="button"
+                    className="coll-pick-del"
+                    onClick={() => _deleteRelease(release)}
+                    aria-label="Удалить релиз"
+                    title="Удалить"
+                  >
+                    <Icon name="trash" size={16} />
+                  </button>
                 </div>
               );
             })}
-            {addedReleases.length == 1 && <div></div>}
           </div>
-        </div>
-      </div>
+        : <div className="empty">
+            <span className="empty-ic">
+              <Icon name="film" size={32} />
+            </span>
+            <div className="empty-t">Пока нет релизов</div>
+            <p>Добавьте хотя бы один релиз, чтобы создать коллекцию.</p>
+          </div>
+        }
+      </section>
       <ReleasesEditModal
         isOpen={releasesEditModalOpen}
         setIsOpen={setReleasesEditModalOpen}
@@ -611,59 +564,44 @@ export const ReleasesEditModal = (props: {
     props.setReleasesIds([...props.releasesIds, release.id]);
   }
 
+  if (!props.isOpen) return null;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"7xl"}
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) props.setIsOpen(false);
+      }}
     >
-      <ModalHeader>Изменить релизы в коллекции</ModalHeader>
-      <div
-        onScroll={handleScroll}
-        ref={modalRef}
-        className="px-4 py-4 overflow-auto"
-      >
-        <form
-          className="max-w-full mx-auto"
-          onSubmit={(e) => e.preventDefault()}
-        >
-          <label
-            htmlFor="default-search"
-            className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+      <div className="mb" style={{ width: "min(1100px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Изменить релизы в коллекции</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
           >
-            Поиск
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 flex items-center pointer-events-none start-0 ps-3">
-              <svg
-                className="w-4 h-4 text-gray-500 dark:text-gray-400"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                />
-              </svg>
-            </div>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <form className="form" onSubmit={(e) => e.preventDefault()}>
+          <div style={{ display: "flex", gap: 8 }}>
             <input
               type="search"
-              id="default-search"
-              className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg ps-10 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Поиск аниме..."
+              aria-label="Поиск релизов"
               required
               onChange={(e) => setQuery(e.target.value)}
               value={query || ""}
             />
             <button
               type="button"
-              className="text-white absolute end-2.5 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+              className="btn g"
+              style={{ flex: "none" }}
               onClick={() => {
                 setSize(0);
                 setContent([]);
@@ -675,27 +613,41 @@ export const ReleasesEditModal = (props: {
           </div>
         </form>
 
-        <div className="grid grid-cols-1 gap-2 mt-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {content.map((release) => {
-            return (
-              <button
-                className="text-left"
-                key={release.id}
-                onClick={() => _addRelease(release)}
-              >
-                <PosterWithStuff {...release} />
-              </button>
-            );
-          })}
-        </div>
-        {isLoading && (
-          <div className="flex items-center justify-center h-full min-h-24">
-            <Spinner />
+        <div
+          onScroll={handleScroll}
+          ref={modalRef}
+          className="mb-list"
+          style={{ maxHeight: "56vh", marginTop: 12 }}
+        >
+          <div className="grid">
+            {content.map((release) => {
+              return (
+                <button
+                  type="button"
+                  className="text-left"
+                  style={{
+                    background: "none",
+                    border: 0,
+                    padding: 0,
+                    color: "inherit",
+                  }}
+                  key={release.id}
+                  onClick={() => _addRelease(release)}
+                >
+                  <PosterWithStuff {...release} />
+                </button>
+              );
+            })}
           </div>
-        )}
-        {error && <div>Произошла ошибка</div>}
+          {isLoading && (
+            <div className="empty" style={{ marginBottom: 0 }}>
+              <Spinner />
+            </div>
+          )}
+          {error && <div className="empty">Произошла ошибка</div>}
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 };
 

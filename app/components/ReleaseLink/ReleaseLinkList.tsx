@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Poster } from "../ReleasePoster/Poster";
+import Image from "next/image";
 import { ReleaseChips } from "../ReleasePoster/Chips";
 import { getFixedGrade, getUserList } from "#/api/utils";
 
@@ -49,37 +49,29 @@ export const ReleaseLinkList = (props: {
   const user_list = getUserList(profile_list_status);
 
   return (
-    <Link href={`/release/${props.id}`}>
-      <div className="flex gap-2">
-        <div className="flex-shrink-0 w-32">
-          <Poster image={props.image} className="h-auto" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <ReleaseChips {...props} user_list={user_list} grade={grade} />
-          <div>
-            {settings.showGenres && (
-              <span className="text-sm font-light leading-none dark:text-white">
-                {props.genres}
-              </span>
-            )}
-          </div>
-          {props.title_ru && (
-            <p className="text-lg font-bold line-clamp-2 dark:text-white">
-              {props.title_ru}
-            </p>
-          )}
-          {settings.showOrigTitle && props.title_original && (
-            <p className="text-sm text-gray-600 line-clamp-2 dark:text-gray-300">
-              {props.title_original}
-            </p>
-          )}
-          {settings.showDescription && props.description && (
-            <p className="mt-2 text-sm font-light leading-none text-white lg:text-base xl:text-lg line-clamp-4">
-              {props.description}
-            </p>
-          )}
-        </div>
-      </div>
+    <Link href={`/release/${props.id}`} className="row">
+      <span className="row-poster">
+        <Image
+          src={props.image}
+          alt={props.title_ru || ""}
+          fill
+          sizes="56px"
+          className="object-cover"
+        />
+      </span>
+      <span className="row-body">
+        <span className="row-title">{props.title_ru}</span>
+        {settings.showOrigTitle && props.title_original && (
+          <span className="row-sub">{props.title_original}</span>
+        )}
+        <ReleaseChips {...props} user_list={user_list} grade={grade} />
+        {settings.showGenres && props.genres && (
+          <span className="row-sub">{props.genres}</span>
+        )}
+        {settings.showDescription && props.description && (
+          <span className="row-sub row-desc">{props.description}</span>
+        )}
+      </span>
     </Link>
   );
 };

@@ -1,11 +1,12 @@
 "use client";
 import { ENDPOINTS } from "#/api/config";
 import { tryCatchAPI } from "#/api/utils";
-import { Card, Button, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import useSWR, { useSWRConfig } from "swr";
+import { Icon } from "#/components/Icon/Icon";
 
 // null - не друзья
 // 0 - заявка в друзья authUserId < profileId
@@ -173,18 +174,22 @@ export const ProfileActions = (props: {
   }
 
   return (
-    <Card className="h-fit">
+    <div className="box" style={{ marginBottom: 0 }}>
       {isRequestedStatus != null && !isRequestedStatus && FriendStatus != 1 && (
-        <p>Отправил(-а) вам заявку в друзья</p>
+        <div className="rhero-note" style={{ margin: "0 0 10px" }}>
+          Отправил(-а) вам заявку в друзья
+        </div>
       )}
-      <div className="flex gap-2">
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {props.isMyProfile && (
-          <Button
-            color={"blue"}
+          <button
+            type="button"
+            className="btn p"
             onClick={() => props.edit_setIsOpen(!props.edit_isOpen)}
           >
+            <Icon name="edit" size={16} />
             Редактировать
-          </Button>
+          </button>
         )}
         {!props.isMyProfile && (
           <>
@@ -193,33 +198,40 @@ export const ProfileActions = (props: {
               isRequestedStatus) &&
               !props.is_me_blocked &&
               !props.is_blocked && (
-                <Button
-                  disabled={actionsDisabled}
-                  color={
-                    FriendStatus == 1 ? "red"
+                <button
+                  type="button"
+                  className={`btn ${
+                    FriendStatus == 1 ? "danger"
                     : isRequestedStatus ?
-                      "light"
-                    : "blue"
-                  }
+                      "g"
+                    : "p"
+                  }`}
+                  disabled={actionsDisabled}
                   onClick={() => _addToFriends()}
                 >
+                  <Icon
+                    name={FriendStatus == 1 ? "userMinus" : "userPlus"}
+                    size={16}
+                  />
                   {FriendStatus == 1 ?
-                    "Удалить из друзей"
+                    "Удалить из друзей"
                   : isRequestedStatus ?
                     "Заявка отправлена"
                   : "Добавить в друзья"}
-                </Button>
+                </button>
               )}
-            <Button
-              color={!props.is_blocked ? "red" : "blue"}
+            <button
+              type="button"
+              className={`btn ${!props.is_blocked ? "danger" : "p"}`}
               disabled={actionsDisabled}
               onClick={() => _addToBlocklist()}
             >
+              <Icon name={!props.is_blocked ? "ban" : "check"} size={16} />
               {!props.is_blocked ? "Заблокировать" : "Разблокировать"}
-            </Button>
+            </button>
           </>
         )}
       </div>
-    </Card>
+    </div>
   );
 };

@@ -1,16 +1,8 @@
 "use client";
 
 import { FilterProfileListIdToString } from "#/api/utils";
-import {
-  Button,
-  Checkbox,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-} from "flowbite-react";
 import { useEffect, useState } from "react";
+import { Icon } from "#/components/Icon/Icon";
 
 type Props = {
   isOpen: boolean;
@@ -39,69 +31,98 @@ export const FiltersListExcludeModal = ({
     setNewList(lists);
   }, [lists]);
 
+  if (!isOpen) return null;
+
   return (
-    <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-      <ModalHeader>Выберите списки</ModalHeader>
-      <ModalBody>
-        {Object.entries(FilterProfileListIdToString).map(([key, value]) => {
-          return (
-            <div
-              className="flex items-center gap-2"
-              key={`filter-list-exclude-${value}`}
-            >
-              <Checkbox
-                id={`filter-list-exclude-${value}`}
-                onChange={() => toggleList(Number(key))}
-                checked={newList.includes(Number(key))}
-                color="blue"
-              />
-              <Label htmlFor={`filter-list-exclude-${value}`}>{value}</Label>
-            </div>
-          );
-        })}
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          onClick={() => {
-            setLists([]);
-            setNewList([]);
-            setIsOpen(false);
-          }}
-          color="red"
-        >
-          Сбросить
-        </Button>
-        <Button
-          onClick={() => {
-            setLists(newList);
-            setNewList([]);
-            setIsOpen(false);
-          }}
-          color="blue"
-        >
-          Применить
-        </Button>
-        <Button
-          onClick={() => {
-            if (
-              newList.length != Object.keys(FilterProfileListIdToString).length
-            ) {
-              setNewList(
-                Object.keys(FilterProfileListIdToString).map((key) =>
-                  Number(key)
-                )
-              );
-            } else {
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
+    >
+      <div className="mb" style={{ width: "min(520px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Выберите списки</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="check-list">
+          {Object.entries(FilterProfileListIdToString).map(([key, value]) => {
+            return (
+              <label
+                className="check"
+                key={`filter-list-exclude-${value}`}
+                style={{ margin: 0 }}
+              >
+                <input
+                  type="checkbox"
+                  onChange={() => toggleList(Number(key))}
+                  checked={newList.includes(Number(key))}
+                />
+                <span>{value}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn danger"
+            onClick={() => {
+              setLists([]);
               setNewList([]);
-            }
-          }}
-          color="light"
-        >
-          {newList.length >= Object.keys(FilterProfileListIdToString).length ?
-            "Снять все"
-          : "Выбрать все"}
-        </Button>
-      </ModalFooter>
-    </Modal>
+              setIsOpen(false);
+            }}
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => {
+              if (
+                newList.length !=
+                Object.keys(FilterProfileListIdToString).length
+              ) {
+                setNewList(
+                  Object.keys(FilterProfileListIdToString).map((key) =>
+                    Number(key)
+                  )
+                );
+              } else {
+                setNewList([]);
+              }
+            }}
+          >
+            {newList.length >=
+            Object.keys(FilterProfileListIdToString).length ?
+              "Снять все"
+            : "Выбрать все"}
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => {
+              setLists(newList);
+              setNewList([]);
+              setIsOpen(false);
+            }}
+          >
+            <Icon name="check" size={16} />
+            Применить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

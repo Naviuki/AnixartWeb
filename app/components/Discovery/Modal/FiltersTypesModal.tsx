@@ -1,15 +1,7 @@
 "use client";
 
-import {
-  Button,
-  Checkbox,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-} from "flowbite-react";
 import { useEffect, useState } from "react";
+import { Icon } from "#/components/Icon/Icon";
 
 type Props = {
   isOpen: boolean;
@@ -40,61 +32,88 @@ export const FiltersTypesModal = ({
     setNewTypes(types);
   }, [types]);
 
+  if (!isOpen) return null;
+
   return (
-    <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-      <ModalHeader>Выберите списки</ModalHeader>
-      <ModalBody>
-        {typesData.map((item) => {
-          return (
-            <div
-              className="flex items-center gap-2"
-              key={`filter-types-${item.name}`}
-            >
-              <Checkbox
-                id={`filter-types-${item.name}`}
-                onChange={() => toggleType(Number(item.id))}
-                checked={newTypes.includes(Number(item.id))}
-                color="blue"
-              />
-              <Label htmlFor={`filter-types-${item.name}`}>{item.name}</Label>
-            </div>
-          );
-        })}
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          onClick={() => {
-            setTypes([]);
-            setNewTypes([]);
-            setIsOpen(false);
-          }}
-          color="red"
-        >
-          Сбросить
-        </Button>
-        <Button
-          onClick={() => {
-            setTypes(newTypes);
-            setNewTypes([]);
-            setIsOpen(false);
-          }}
-          color="blue"
-        >
-          Применить
-        </Button>
-        <Button
-          onClick={() => {
-            if (newTypes.length != typesData.length) {
-              setNewTypes(typesData.map((item) => Number(item.id)));
-            } else {
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
+    >
+      <div className="mb" style={{ width: "min(520px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Варианты озвучек</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="check-list">
+          {typesData.map((item) => {
+            return (
+              <label
+                className="check"
+                key={`filter-types-${item.name}`}
+                style={{ margin: 0 }}
+              >
+                <input
+                  type="checkbox"
+                  onChange={() => toggleType(Number(item.id))}
+                  checked={newTypes.includes(Number(item.id))}
+                />
+                <span>{item.name}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn danger"
+            onClick={() => {
+              setTypes([]);
               setNewTypes([]);
-            }
-          }}
-          color="light"
-        >
-          {newTypes.length >= typesData.length ? "Снять все" : "Выбрать все"}
-        </Button>
-      </ModalFooter>
-    </Modal>
+              setIsOpen(false);
+            }}
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => {
+              if (newTypes.length != typesData.length) {
+                setNewTypes(typesData.map((item) => Number(item.id)));
+              } else {
+                setNewTypes([]);
+              }
+            }}
+          >
+            {newTypes.length >= typesData.length ? "Снять все" : "Выбрать все"}
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => {
+              setTypes(newTypes);
+              setNewTypes([]);
+              setIsOpen(false);
+            }}
+          >
+            <Icon name="check" size={16} />
+            Применить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

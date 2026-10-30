@@ -1,18 +1,13 @@
 import { ENDPOINTS } from "#/api/config";
 import { tryCatchAPI, unixToDate, useSWRfetcher } from "#/api/utils";
-import {
-  Avatar,
-  Button,
-  Modal,
-  ModalHeader,
-  useThemeMode,
-} from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { useCallback, useEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
 import { Spinner } from "../Spinner/Spinner";
 import { toast } from "react-toastify";
 import useSWR, { mutate } from "swr";
 import Link from "next/link";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileFriendModal = (props: {
   isOpen: boolean;
@@ -193,154 +188,170 @@ export const ProfileFriendModal = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollPosition]);
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <>
-      <Modal
-        dismissible
-        show={props.isOpen}
-        onClose={() => props.setIsOpen(false)}
-        size={"4xl"}
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        onClick={(event) => event.stopPropagation()}
+        style={{ width: "min(720px, 100%)" }}
       >
-        <ModalHeader>Друзья</ModalHeader>
-        <div
-          className="flex flex-col gap-4 p-4 overflow-y-auto"
-          onScroll={handleScroll}
-          ref={modalRef}
-        >
+        <div className="mb-head">
+          <h3>Друзья</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" onScroll={handleScroll} ref={modalRef}>
           {props.isMyProfile && (
             <>
-              <div className="flex flex-col gap-2">
-                <p className="text-lg font-semibold">Входящие заявки</p>
-                {(
-                  requestInUsersData &&
-                  requestInUsersData.content &&
-                  requestInUsersData.content.length > 0
-                ) ?
-                  requestInUsersData.content.map((user) => {
-                    return (
-                      <div
-                        className="flex items-center justify-between gap-2"
-                        key={`friend_req_in-${user.id}`}
-                      >
-                        <Link href={`/profile/${user.id}`}>
-                          <div className="flex gap-2">
-                            <Avatar
-                              alt=""
-                              img={user.avatar}
-                              rounded={true}
-                              size={"md"}
-                              bordered={true}
-                              color={user.is_online ? "success" : "light"}
-                              className="flex-shrink-0"
-                            />
-                            <div className="flex flex-col gap-1">
-                              <p className="text-lg font-semibold">
-                                {user.login}
-                              </p>
-                              <p>Друзей: {user.friend_count}</p>
-                            </div>
-                          </div>
-                        </Link>
-                        <div className="flex gap-2">
-                          <Button
-                            color="blue"
-                            onClick={() => _acceptRequestIn(user.id)}
-                          >
-                            Принять
-                          </Button>
-                          <Button
-                            color="light"
-                            onClick={() => _hideRequestIn(user.id)}
-                          >
-                            Скрыть
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                : <p className="text-sm">Нет входящих заявок</p>}
+              <div className="set-group-t">
+                <Icon name="userPlus" size={16} />
+                Входящие заявки
               </div>
-              <div className="flex flex-col gap-2">
-                <p className="text-lg font-semibold">Исходящие заявки</p>
-                {(
-                  requestOutUsersData &&
-                  requestOutUsersData.content &&
-                  requestOutUsersData.content.length > 0
-                ) ?
-                  requestOutUsersData.content.map((user) => {
-                    return (
-                      <div
-                        className="flex items-center justify-between gap-2"
-                        key={`friend_req_out-${user.id}`}
+              {requestInUsersData &&
+              requestInUsersData.content &&
+              requestInUsersData.content.length > 0 ?
+                requestInUsersData.content.map((user) => {
+                  return (
+                    <div className="row" key={`friend_req_in-${user.id}`}>
+                      <Link
+                        href={`/profile/${user.id}`}
+                        className="friend-tile"
+                        style={{ border: "none", background: "transparent" }}
                       >
-                        <Link href={`/profile/${user.id}`}>
-                          <div className="flex gap-2">
-                            <Avatar
-                              alt=""
-                              img={user.avatar}
-                              rounded={true}
-                              size={"md"}
-                              bordered={true}
-                              color={user.is_online ? "success" : "light"}
-                              className="flex-shrink-0"
-                            />
-                            <div className="flex flex-col gap-1">
-                              <p className="text-lg font-semibold">
-                                {user.login}
-                              </p>
-                              <p>Друзей: {user.friend_count}</p>
-                            </div>
-                          </div>
-                        </Link>
-                        <div className="flex gap-2">
-                          <Button
-                            color="light"
-                            onClick={() => _cancelRequestOut(user.id)}
-                          >
-                            Отменить
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })
-                : <p className="text-sm">Нет исходящих заявок</p>}
+                        <span className="friend-ava">
+                          {user.avatar ?
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={user.avatar} alt="" />
+                          : user.login[0].toUpperCase()}
+                        </span>
+                        <span className="row-body">
+                          <span className="row-title">{user.login}</span>
+                          <span className="row-sub">
+                            Друзей: {user.friend_count}
+                          </span>
+                        </span>
+                      </Link>
+                      <span className="row-right">
+                        <button
+                          type="button"
+                          className="btn p"
+                          style={{ padding: "5px 10px", fontSize: 12 }}
+                          onClick={() => _acceptRequestIn(user.id)}
+                        >
+                          Принять
+                        </button>
+                        <button
+                          type="button"
+                          className="btn g"
+                          style={{ padding: "5px 10px", fontSize: 12 }}
+                          onClick={() => _hideRequestIn(user.id)}
+                        >
+                          Скрыть
+                        </button>
+                      </span>
+                    </div>
+                  );
+                })
+              : <p className="muted small">Нет входящих заявок</p>}
+
+              <div className="set-group-t" style={{ marginTop: 6 }}>
+                <Icon name="userMinus" size={16} />
+                Исходящие заявки
               </div>
+              {requestOutUsersData &&
+              requestOutUsersData.content &&
+              requestOutUsersData.content.length > 0 ?
+                requestOutUsersData.content.map((user) => {
+                  return (
+                    <div className="row" key={`friend_req_out-${user.id}`}>
+                      <Link
+                        href={`/profile/${user.id}`}
+                        className="friend-tile"
+                        style={{ border: "none", background: "transparent" }}
+                      >
+                        <span className="friend-ava">
+                          {user.avatar ?
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={user.avatar} alt="" />
+                          : user.login[0].toUpperCase()}
+                        </span>
+                        <span className="row-body">
+                          <span className="row-title">{user.login}</span>
+                          <span className="row-sub">
+                            Друзей: {user.friend_count}
+                          </span>
+                        </span>
+                      </Link>
+                      <span className="row-right">
+                        <button
+                          type="button"
+                          className="btn g"
+                          style={{ padding: "5px 10px", fontSize: 12 }}
+                          onClick={() => _cancelRequestOut(user.id)}
+                        >
+                          Отменить
+                        </button>
+                      </span>
+                    </div>
+                  );
+                })
+              : <p className="muted small">Нет исходящих заявок</p>}
             </>
           )}
-          <div className="flex flex-col gap-2">
-            <p className="text-lg font-semibold">Все друзья</p>
-            {friends && friends.length > 0 ?
-              friends.map((user) => {
-                return (
-                  <div
-                    className="flex items-center justify-between gap-2"
-                    key={`friend-${user.id}`}
-                  >
-                    <Link href={`/profile/${user.id}`}>
-                      <div className="flex gap-2">
-                        <Avatar
-                          alt=""
-                          img={user.avatar}
-                          rounded={true}
-                          size={"md"}
-                          bordered={true}
-                          color={user.is_online ? "success" : "light"}
-                          className="flex-shrink-0"
-                        />
-                        <div className="flex flex-col gap-1">
-                          <p className="text-lg font-semibold">{user.login}</p>
-                          <p>Друзей: {user.friend_count}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                );
-              })
-            : <p className="text-sm">Нет друзей</p>}
+
+          <div className="set-group-t" style={{ marginTop: 6 }}>
+            <Icon name="users" size={16} />
+            Все друзья
           </div>
-          {isLoading && <Spinner />}
+          {friends && friends.length > 0 ?
+            friends.map((user) => {
+              return (
+                <Link
+                  href={`/profile/${user.id}`}
+                  className="row"
+                  key={`friend-${user.id}`}
+                  style={{ marginBottom: 0 }}
+                >
+                  <span className="friend-ava">
+                    {user.avatar ?
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar} alt="" />
+                    : user.login[0].toUpperCase()}
+                    <i
+                      className="friend-dot"
+                      style={{
+                        background:
+                          user.is_online ? "var(--rate-5)" : "var(--t3)",
+                      }}
+                    />
+                  </span>
+                  <span className="row-body">
+                    <span className="row-title">{user.login}</span>
+                    <span className="row-sub">Друзей: {user.friend_count}</span>
+                  </span>
+                  <span className="row-right">
+                    <Icon name="chevron" size={16} />
+                  </span>
+                </Link>
+              );
+            })
+          : <p className="muted small">Нет друзей</p>}
+          {isLoading && (
+            <div className="empty" style={{ marginBottom: 0 }}>
+              <Spinner />
+            </div>
+          )}
         </div>
-      </Modal>
-    </>
+      </div>
+    </div>
   );
 };

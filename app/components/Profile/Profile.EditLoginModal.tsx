@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader, Textarea, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { ENDPOINTS } from "#/api/config";
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -9,6 +9,7 @@ import { unixToDate } from "#/api/utils";
 import { toast } from "react-toastify";
 import { tryCatchAPI } from "#/api/utils";
 import { useUserStore } from "#/store/auth";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileEditLoginModal = (props: {
   isOpen: boolean;
@@ -131,67 +132,87 @@ export const ProfileEditLoginModal = (props: {
     props.setIsOpen(false);
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"4xl"}
-    >
-      <ModalHeader>Изменить никнейм</ModalHeader>
-      <ModalBody>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(520px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>Изменить никнейм</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
         {loading ?
-          <div className="flex items-center justify-center py-8">
+          <div className="empty" style={{ marginBottom: 0 }}>
             <Spinner />
           </div>
         : <>
             {!_loginData.is_change_available ?
-              <>
-                <p>Вы недавно изменили никнейм</p>
-                <p>
-                  следующее изменение будет доступно:{" "}
-                  <span className="font-bold">
-                    {unixToDate(_loginData.next_change_available_at, "full")}
-                  </span>
-                </p>
-              </>
-            : <>
-                <Textarea
+              <div className="banner">
+                <span className="banner-ic">
+                  <Icon name="clock" size={18} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="banner-t">Вы недавно изменили никнейм</div>
+                  <div className="banner-s">
+                    следующее изменение будет доступно:{" "}
+                    <b style={{ color: "var(--t1)" }}>
+                      {unixToDate(_loginData.next_change_available_at, "full")}
+                    </b>
+                  </div>
+                </div>
+              </div>
+            : <div className="form">
+                <textarea
                   disabled={sending}
                   rows={1}
                   id="login"
-                  className="w-full"
                   name="login"
                   onChange={(e) => handleInput(e)}
                   value={_login}
                   maxLength={20}
                 />
-                <p className="text-sm text-right text-gray-500 dark:text-gray-300">
+                <p className="hint" style={{ textAlign: "right" }}>
                   {_loginLength}/20
                 </p>
-              </>
+              </div>
             }
           </>
         }
-      </ModalBody>
-      <ModalFooter>
-        {_loginData.is_change_available && (
-          <Button
-            color="blue"
-            onClick={() => _setLoginSetting()}
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => props.setIsOpen(false)}
             disabled={sending || loading}
           >
-            Сохранить
-          </Button>
-        )}
-        <Button
-          color="red"
-          onClick={() => props.setIsOpen(false)}
-          disabled={sending || loading}
-        >
-          Отмена
-        </Button>
-      </ModalFooter>
-    </Modal>
+            Отмена
+          </button>
+          {_loginData.is_change_available && (
+            <button
+              type="button"
+              className="btn p"
+              onClick={() => _setLoginSetting()}
+              disabled={sending || loading}
+            >
+              <Icon name="check" size={16} />
+              Сохранить
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };

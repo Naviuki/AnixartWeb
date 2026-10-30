@@ -1,7 +1,7 @@
-import { Button, Label, Modal, ModalBody, ModalHeader, Textarea, ToggleSwitch } from "flowbite-react";
 import { CommentsComment } from "./Comments.Comment";
 import { useState } from "react";
 import { ENDPOINTS } from "#/api/config";
+import { Icon } from "#/components/Icon/Icon";
 
 export const CommentsAddModal = (props: {
   isOpen: boolean;
@@ -63,20 +63,34 @@ export const CommentsAddModal = (props: {
     }
   }
 
+  if (!props.isOpen) return null;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) props.setIsOpen(false);
+      }}
     >
-      <ModalHeader>
-        <p className="text-lg font-bold text-gray-900 lg:text-2xl dark:text-white">
-          {props.isReply ? "Ответ на комментарий" : "Оставить комментарий"}
-        </p>
-      </ModalHeader>
-      <ModalBody>
+      <div className="mb" style={{ width: "min(560px, 100%)" }}>
+        <div className="mb-head">
+          <h3>
+            {props.isReply ? "Ответ на комментарий" : "Оставить комментарий"}
+          </h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
         {props.isReply && (
-          <div className="mb-4">
+          <div style={{ marginBottom: 14 }}>
             <CommentsComment
               release_id={props.release_id}
               profile={props.parentProfile}
@@ -96,44 +110,44 @@ export const CommentsAddModal = (props: {
             />
           </div>
         )}
-        <form className="flex flex-col gap-4" onSubmit={(e) => _sendComment(e)}>
-          <div>
-            <div className="block mb-2 sr-only">
-              <Label htmlFor="comment">Ваш комментарий.</Label>
-            </div>
-            <Textarea
-              id="comment"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Написать комментарий..."
-              required={true}
-              rows={4}
-            />
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <ToggleSwitch
-                color="blue"
-                theme={{
-                  toggle: {
-                    checked: {
-                      color: {
-                        blue: "border-blue-700 bg-blue-700",
-                      },
-                    },
-                  },
-                }}
+
+        <form className="form" onSubmit={(e) => _sendComment(e)}>
+          <label htmlFor="comment" className="sr-only">
+            Ваш комментарий
+          </label>
+          <textarea
+            id="comment"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Написать комментарий..."
+            required={true}
+            rows={4}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginTop: 12,
+            }}
+          >
+            <label className="check" style={{ margin: 0 }}>
+              <input
+                type="checkbox"
                 checked={isSpoiler}
                 onChange={() => setIsSpoiler(!isSpoiler)}
-                label="Спойлер"
               />
-            </div>
-            <Button type="submit" color={"blue"} disabled={isSending}>
+              <span>Спойлер</span>
+            </label>
+            <button type="submit" className="btn p" disabled={isSending}>
+              <Icon name="comment" size={16} />
               Отправить
-            </Button>
+            </button>
           </div>
         </form>
-      </ModalBody>
-    </Modal>
+      </div>
+    </div>
   );
 };

@@ -6,13 +6,14 @@ import "swiper/css/scrollbar";
 import { Navigation, Mousewheel, Scrollbar } from "swiper/modules";
 import { CollectionLink } from "../CollectionLink/CollectionLink";
 import Link from "next/link";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileActivityCollections = (props: {
   content: any;
   profile_id: number;
 }) => {
   return (
-    <div className="max-w-full">
+    <div style={{ maxWidth: "100%" }}>
       <Swiper
         modules={[Navigation, Mousewheel, Scrollbar]}
         spaceBetween={8}
@@ -41,7 +42,7 @@ export const ProfileActivityCollections = (props: {
                 key={`col-prev-${collection.id}`}
                 style={{ width: "fit-content" }}
               >
-                <div className="w-[350px] xl:w-[500px] aspect-video">
+                <div className="coll-slide">
                   <CollectionLink {...collection} />
                 </div>
               </SwiperSlide>
@@ -50,14 +51,15 @@ export const ProfileActivityCollections = (props: {
 
         {props.content && props.content.length > 0 ?
           <SwiperSlide style={{ width: "fit-content" }}>
-            <Link href={`/profile/${props.profile_id}/collections`}>
-              <div className="w-[350px] xl:w-[500px] flex flex-col items-center justify-center gap-2 text-black transition-colors bg-gray-100 border hover:bg-gray-200 border-gray-50 hover:border-gray-100 dark:border-gray-700 dark:hover:border-gray-600 dark:hover:bg-gray-500 aspect-video group dark:bg-gray-600 dark:text-white">
-                <span className="w-8 h-8 iconify mdi--arrow-right dark:fill-white"></span>
-                <p>Все коллекции</p>
-              </div>
+            <Link
+              href={`/profile/${props.profile_id}/collections`}
+              className="more-tile"
+            >
+              <Icon name="arrowRight" size={26} />
+              <span>Все коллекции</span>
             </Link>
           </SwiperSlide>
-        : <p className="text-lg">У пользователя нет коллекций</p>}
+        : <p className="muted">У пользователя нет коллекций</p>}
       </Swiper>
     </div>
   );

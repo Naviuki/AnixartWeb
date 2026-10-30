@@ -5,10 +5,11 @@ import { Spinner } from "#/components/Spinner/Spinner";
 import { useState, useEffect } from "react";
 import { useScrollPosition } from "#/hooks/useScrollPosition";
 import { useUserStore } from "../store/auth";
-import { Button } from "flowbite-react";
 import { ENDPOINTS } from "#/api/config";
 import { useRouter } from "next/navigation";
 import { useSWRfetcher } from "#/api/utils";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 export function CollectionsFullPage(props: {
   type: "favorites" | "profile" | "release";
@@ -77,31 +78,34 @@ export function CollectionsFullPage(props: {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-w-full min-h-screen">
+      <div className="empty">
         <Spinner />
+        <p>Загружаем коллекции</p>
       </div>
     );
-  };
+  }
 
   if (error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Ошибка</h1>
-          <p className="text-lg">
-            Произошла ошибка при загрузке коллекций. Попробуйте обновить страницу
-            или зайдите позже.
-          </p>
-        </div>
-      </main>
+      <div className="empty">
+        <span className="empty-ic">
+          <Icon name="info" size={32} />
+        </span>
+        <div className="empty-t">Ошибка</div>
+        <p>
+          Произошла ошибка при загрузке коллекций. Попробуйте обновить страницу
+          или зайдите позже.
+        </p>
+      </div>
     );
-  };
+  }
 
   return (
     <>
+      <PageHead title={props.title} subtitle="Подборки Anixart" />
+
       {content && content.length > 0 ?
         <CollectionsSection
-          sectionTitle={props.title}
           content={content}
           isMyCollections={
             props.type == "profile" &&
@@ -109,24 +113,27 @@ export function CollectionsFullPage(props: {
             props.profile_id == userStore.user.id
           }
         />
-      : <div className="flex flex-col items-center justify-center min-w-full gap-4 mt-12 text-xl">
-          <span className="w-24 h-24 iconify-color twemoji--broken-heart"></span>
-          <p>Тут пока ничего нет...</p>
+      : <div className="empty">
+          <span className="empty-ic">
+            <Icon name="collection" size={32} />
+          </span>
+          <div className="empty-t">Пока пусто</div>
+          <p>Тут пока ничего нет.</p>
         </div>
       }
+
       {data &&
         data[data.length - 1].current_page <
           data[data.length - 1].total_page_count && (
-          <Button
-            className="w-full"
-            color={"light"}
+          <button
+            type="button"
+            className="btn g"
+            style={{ width: "100%", marginTop: 16 }}
             onClick={() => setSize(size + 1)}
           >
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 iconify mdi--plus-circle "></span>
-              <span className="text-lg">Загрузить ещё</span>
-            </div>
-          </Button>
+            <Icon name="plus" size={16} />
+            Загрузить ещё
+          </button>
         )}
     </>
   );

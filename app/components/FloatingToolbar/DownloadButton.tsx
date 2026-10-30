@@ -2,16 +2,24 @@
 
 import { ANILIBRIA_API_URL, TORAPI_API_URL } from "#/api/config";
 import { formatBytes } from "#/api/utils";
-import { Modal, ModalBody, ModalHeader } from "flowbite-react";
 import { useEffect, useState } from "react";
-import { TabItem, Tabs } from "flowbite-react";
 import { Dropdown, DropdownItem } from "flowbite-react";
+import { Icon } from "#/components/Icon/Icon";
+import { Spinner } from "#/components/Spinner/Spinner";
 
 type Props = {
   release_id: number;
   release_title_ru: string;
   release_title_en: string;
 };
+
+const SERVICES = [
+  { id: "anilibria", title: "Anilibria" },
+  { id: "rutracker", title: "Rutracker" },
+  { id: "rutor", title: "Rutor" },
+  { id: "kinozal", title: "Kinozal" },
+  { id: "nonameclub", title: "NoNameClub" },
+] as const;
 
 export const DownloadButton = ({
   release_id,
@@ -23,10 +31,13 @@ export const DownloadButton = ({
   return (
     <>
       <button
-        className="flex items-center justify-center px-4 py-2 transition-colors first:rounded-l-full last:rounded-r-full hover:bg-gray-300 hover:dark:bg-slate-500"
+        type="button"
+        className="btn icon-only"
         onClick={() => setOpenModal(true)}
+        aria-label="Скачать"
+        title="Скачать"
       >
-        <span className="w-6 h-6 sm:w-8 sm:h-8 iconify mdi--download"></span>
+        <Icon name="download" size={18} />
       </button>
       <DownloadModal
         release_title_ru={release_title_ru}
@@ -45,43 +56,88 @@ const DownloadModal = ({
   setOpenModal,
 }) => {
   const [releaseTitle, setReleaseTitle] = useState(release_title_ru);
+  const [tab, setTab] = useState<string>("anilibria");
+
+  if (!openModal) return <></>;
 
   return (
-    <Modal show={openModal} onClose={() => setOpenModal(false)} dismissible>
-      <ModalHeader>Поиск торрентов</ModalHeader>
-      <ModalBody>
-        <div className="flex items-center gap-2">
-          <span>Искать по:</span>
-          <Dropdown color={"blue"} size="sm" label={releaseTitle == release_title_ru ? "Русскому названию" : "Оригинальному названию"} dismissOnClick={true}>
-            <DropdownItem onClick={() => setReleaseTitle(release_title_ru)}>Русскому названию</DropdownItem>
-            <DropdownItem onClick={() => setReleaseTitle(release_title_en)}>Оригинальному названию</DropdownItem>
+    <div className="md" onClick={() => setOpenModal(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(720px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>Поиск торрентов</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setOpenModal(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <span className="muted small">Искать по:</span>
+          <Dropdown
+            label={
+              releaseTitle == release_title_ru ?
+                "Русскому названию"
+              : "Оригинальному названию"
+            }
+            dismissOnClick={true}
+            renderTrigger={() => (
+              <button type="button" className="chip">
+                {releaseTitle == release_title_ru ?
+                  "Русскому названию"
+                : "Оригинальному названию"}
+                <Icon name="chevron" size={14} />
+              </button>
+            )}
+          >
+            <DropdownItem onClick={() => setReleaseTitle(release_title_ru)}>
+              Русскому названию
+            </DropdownItem>
+            <DropdownItem onClick={() => setReleaseTitle(release_title_en)}>
+              Оригинальному названию
+            </DropdownItem>
           </Dropdown>
         </div>
-        <Tabs variant="underline">
-          <TabItem active title="Anilibria">
+
+        <div className="chiprow" style={{ marginBottom: 12 }}>
+          {SERVICES.map((service) => (
+            <button
+              key={service.id}
+              type="button"
+              className={`chip ${tab === service.id ? "active" : ""}`}
+              onClick={() => setTab(service.id)}
+            >
+              {service.title}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-list">
+          {tab === "anilibria" ?
             <AnilibriaTorrentTab release_title={releaseTitle} />
-          </TabItem>
-          <TabItem title="Rutracker">
-            <TorApiTorrentTab
+          : <TorApiTorrentTab
               release_title={releaseTitle}
-              service="rutracker"
+              service={tab as "rutracker" | "rutor" | "kinozal" | "nonameclub"}
             />
-          </TabItem>
-          <TabItem title="Rutor">
-            <TorApiTorrentTab release_title={releaseTitle} service="rutor" />
-          </TabItem>
-          <TabItem title="Kinozal">
-            <TorApiTorrentTab release_title={releaseTitle} service="kinozal" />
-          </TabItem>
-          <TabItem title="NoNameClub">
-            <TorApiTorrentTab
-              release_title={releaseTitle}
-              service="nonameclub"
-            />
-          </TabItem>
-        </Tabs>
-      </ModalBody>
-    </Modal>
+          }
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -110,49 +166,67 @@ const TorrentItem = ({
   quality,
 }: TorrentItemProps) => {
   return (
-    <div>
-      <p className="leading-none">{title}</p>
-      <p className="my-1 text-xs text-gray-500 dark:text-gray-300">
+    <div className="box" style={{ marginBottom: 0 }}>
+      <p style={{ fontWeight: 700, lineHeight: 1.3 }}>{title}</p>
+      <p className="muted small" style={{ marginTop: 2 }}>
         {filename}
+        {size ? ` · ${size}` : ""}
       </p>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-wrap items-start gap-2">
-          {codec != null && (
-            <p className="px-2 py-1 text-xs text-white bg-blue-500 rounded-lg">
-              {codec}
-            </p>
-          )}
-          {quality != null && (
-            <p className="px-2 py-1 text-xs text-white bg-blue-500 rounded-lg">
-              {quality}
-            </p>
-          )}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+          marginTop: 8,
+          flexWrap: "wrap",
+        }}
+      >
+        <div className="chiprow">
+          {codec != null && <span className="badge soft">{codec}</span>}
+          {quality != null && <span className="badge soft">{quality}</span>}
           {seeders != null && (
-            <p className="px-2 py-1 text-xs text-white bg-green-500 rounded-lg">
+            <span
+              className="badge"
+              style={{
+                background: "color-mix(in srgb, var(--rate-5) 18%, transparent)",
+                borderColor: "transparent",
+              }}
+            >
               {seeders} Сидов
-            </p>
+            </span>
           )}
           {leechers != null && (
-            <p className="px-2 py-1 text-xs text-white bg-red-500 rounded-lg">
+            <span
+              className="badge"
+              style={{
+                background: "color-mix(in srgb, var(--rate-1) 18%, transparent)",
+                borderColor: "transparent",
+              }}
+            >
               {leechers} Личей
-            </p>
+            </span>
           )}
         </div>
-        <div className="flex items-start gap-2">
+        <div style={{ display: "flex", gap: 8 }}>
           {magnet && (
             <a
-              className="px-2 py-1 text-white transition-colors bg-green-600 rounded hover:bg-green-800"
+              className="btn p"
+              style={{ padding: "5px 10px", fontSize: 12 }}
               href={magnet}
             >
-              <span className="w-4 h-4 iconify mdi--magnet"></span>
+              <Icon name="link" size={14} />
+              Magnet
             </a>
           )}
           {file && (
             <a
-              className="px-2 py-1 text-white transition-colors bg-green-600 rounded hover:bg-green-800"
+              className="btn"
+              style={{ padding: "5px 10px", fontSize: 12 }}
               href={file}
             >
-              <span className="w-4 h-4 iconify mdi--file"></span>
+              <Icon name="download" size={14} />
+              Файл
             </a>
           )}
         </div>
@@ -226,12 +300,19 @@ const AnilibriaTorrentTab = ({ release_title }: { release_title: string }) => {
     _getData();
   }, [release_title]);
 
-  if (anilibria.isLoading) return <p>Загрузка...</p>;
-  if (anilibria.error) return <p>{anilibria.errorDesc}</p>;
-  if (anilibria.data.length === 0) return <p>Торренты не нашлись</p>;
+  if (anilibria.isLoading)
+    return (
+      <div className="empty" style={{ marginBottom: 0 }}>
+        <Spinner />
+        <p>Загрузка...</p>
+      </div>
+    );
+  if (anilibria.error) return <p className="muted">{anilibria.errorDesc}</p>;
+  if (anilibria.data.length === 0)
+    return <p className="muted">Торренты не нашлись</p>;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {anilibria.data.map((item: any) => {
         return (
           <TorrentItem
@@ -347,12 +428,19 @@ const TorApiTorrentTab = ({
     _getData();
   }, [release_title, service]);
 
-  if (torApi.isLoading) return <p>Загрузка...</p>;
-  if (torApi.error) return <p>{torApi.errorDesc}</p>;
-  if (torApi.data.length === 0) return <p>Торренты не нашлись</p>;
+  if (torApi.isLoading)
+    return (
+      <div className="empty" style={{ marginBottom: 0 }}>
+        <Spinner />
+        <p>Загрузка...</p>
+      </div>
+    );
+  if (torApi.error) return <p className="muted">{torApi.errorDesc}</p>;
+  if (torApi.data.length === 0)
+    return <p className="muted">Торренты не нашлись</p>;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {torApi.data.map((item: any) => {
         return (
           <TorrentItem

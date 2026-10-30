@@ -3,13 +3,21 @@ interface UserRoleProps {
   color: string;
 }
 
+// Роль профиля: цвет берётся из данных API.
 export const UserRole = ({ name, color }: UserRoleProps) => {
   return (
-    <div
-      className={`text-[var(--color)] border border-[var(--color)] rounded-full px-2 py-1`}
-      style={{ "--color": `#${color}` } as React.CSSProperties}
+    <span
+      className="badge"
+      style={
+        {
+          "--color": `#${color}`,
+          color: `#${color}`,
+          borderColor: `color-mix(in srgb, #${color} 45%, transparent)`,
+          background: `color-mix(in srgb, #${color} 12%, transparent)`,
+        } as React.CSSProperties
+      }
     >
-      <p className="px-1.5 py-0.5">{name}</p>
-    </div>
+      {name}
+    </span>
   );
 };

@@ -1,7 +1,8 @@
-import { Card } from "flowbite-react";
 import ApexCharts, { ApexOptions } from "apexcharts";
 import { useEffect } from "react";
 import { unixToDate } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
+
 export const ProfileWatchDynamic = (props: { watchDynamic: Array<any> }) => {
   const lastTenDays = props.watchDynamic.slice(
     Math.max(props.watchDynamic.length - 10, 0)
@@ -28,7 +29,7 @@ export const ProfileWatchDynamic = (props: { watchDynamic: Array<any> }) => {
     },
     tooltip: {
       enabled: true,
-      theme:"dark",
+      theme: "dark",
       x: {
         show: false,
       },
@@ -96,9 +97,14 @@ export const ProfileWatchDynamic = (props: { watchDynamic: Array<any> }) => {
   }, []);
 
   return (
-    <Card>
-      <h1 className="text-2xl font-bold">Динамика просмотра серий</h1>
+    <div className="box">
+      <div className="sh" style={{ marginBottom: 8 }}>
+        <h2>
+          <Icon name="trend" size={18} />
+          Динамика просмотра серий
+        </h2>
+      </div>
       <div id="area-chart"></div>
-    </Card>
+    </div>
   );
 };

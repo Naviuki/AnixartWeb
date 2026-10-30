@@ -6,12 +6,6 @@
   display: none !important;
 }
 
-@media (hover: hover) and (min-width: 1024px) {
-  .swiper {
-    overflow: visible !important;
-  }
-}
-
 @media (hover: hover) {
   .section:hover .swiper-button {
     display: flex !important;

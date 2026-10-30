@@ -1,21 +1,13 @@
 "use client";
 
-import {
-  Button,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  TextInput,
-  useThemeMode,
-} from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { Spinner } from "../Spinner/Spinner";
 import { ENDPOINTS } from "#/api/config";
 import { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
 import { toast } from "react-toastify";
 import { tryCatchAPI } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileEditSocialModal = (props: {
   isOpen: boolean;
@@ -166,103 +158,104 @@ export const ProfileEditSocialModal = (props: {
     props.setIsOpen(false);
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"4xl"}
-    >
-      <ModalHeader>Соц. сети</ModalHeader>
-      <ModalBody>
-        <p className="p-2 text-gray-400 border-2 border-gray-200 rounded-md dark:border-gray-500 dark:text-gray-300">
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(560px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>Соц. сети</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="rhero-note" style={{ margin: "0 0 4px" }}>
           Укажите ссылки на свои социальные сети, чтобы другие пользователи
           могли с вами связаться
-        </p>
+        </div>
+
         {loading ?
-          <div className="flex items-center justify-center py-8">
+          <div className="empty" style={{ marginBottom: 0 }}>
             <Spinner />
           </div>
-        : <div className="flex flex-col gap-4 py-4">
-            <div>
-              <div className="block mb-2">
-                <Label htmlFor="vk-page">ВКонтакте</Label>
-              </div>
-              <TextInput
-                id="vk-page"
-                name="vkPage"
-                onChange={(e) => handleInput(e)}
-                value={_addUrl(socials.vkPage, "vk")}
-                placeholder="Ссылка или никнейм"
-              />
-            </div>
-            <div>
-              <div className="block mb-2">
-                <Label htmlFor="tg-page">Telegram</Label>
-              </div>
-              <TextInput
-                id="tg-page"
-                name="tgPage"
-                onChange={(e) => handleInput(e)}
-                value={_addUrl(socials.tgPage, "tg")}
-                placeholder="Ссылка или никнейм"
-              />
-            </div>
-            <div>
-              <div className="block mb-2">
-                <Label htmlFor="discord-page">Discord</Label>
-              </div>
-              <TextInput
-                id="discord-page"
-                name="discordPage"
-                onChange={(e) => handleInput(e)}
-                value={socials.discordPage}
-                placeholder="Никнейм"
-              />
-            </div>
-            <div>
-              <div className="block mb-2">
-                <Label htmlFor="inst-page">Instagram</Label>
-              </div>
-              <TextInput
-                id="inst-page"
-                name="instPage"
-                onChange={(e) => handleInput(e)}
-                value={_addUrl(socials.instPage, "inst")}
-                placeholder="Ссылка или никнейм"
-              />
-            </div>
-            <div>
-              <div className="block mb-2">
-                <Label htmlFor="tt-page">TikTok</Label>
-              </div>
-              <TextInput
-                id="tt-page"
-                name="ttPage"
-                onChange={(e) => handleInput(e)}
-                value={_addUrl(socials.ttPage, "tt")}
-                placeholder="Ссылка или никнейм"
-              />
-            </div>
+        : <div className="form">
+            <label htmlFor="vk-page">ВКонтакте</label>
+            <input
+              id="vk-page"
+              name="vkPage"
+              onChange={(e) => handleInput(e)}
+              value={_addUrl(socials.vkPage, "vk")}
+              placeholder="Ссылка или никнейм"
+            />
+
+            <label htmlFor="tg-page">Telegram</label>
+            <input
+              id="tg-page"
+              name="tgPage"
+              onChange={(e) => handleInput(e)}
+              value={_addUrl(socials.tgPage, "tg")}
+              placeholder="Ссылка или никнейм"
+            />
+
+            <label htmlFor="discord-page">Discord</label>
+            <input
+              id="discord-page"
+              name="discordPage"
+              onChange={(e) => handleInput(e)}
+              value={socials.discordPage}
+              placeholder="Никнейм"
+            />
+
+            <label htmlFor="inst-page">Instagram</label>
+            <input
+              id="inst-page"
+              name="instPage"
+              onChange={(e) => handleInput(e)}
+              value={_addUrl(socials.instPage, "inst")}
+              placeholder="Ссылка или никнейм"
+            />
+
+            <label htmlFor="tt-page">TikTok</label>
+            <input
+              id="tt-page"
+              name="ttPage"
+              onChange={(e) => handleInput(e)}
+              value={_addUrl(socials.ttPage, "tt")}
+              placeholder="Ссылка или никнейм"
+            />
           </div>
         }
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          color="blue"
-          onClick={() => _setSocialSetting()}
-          disabled={updating}
-        >
-          Сохранить
-        </Button>
-        <Button
-          color="red"
-          onClick={() => props.setIsOpen(false)}
-          disabled={updating}
-        >
-          Отмена
-        </Button>
-      </ModalFooter>
-    </Modal>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => props.setIsOpen(false)}
+            disabled={updating}
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => _setSocialSetting()}
+            disabled={updating}
+          >
+            <Icon name="check" size={16} />
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

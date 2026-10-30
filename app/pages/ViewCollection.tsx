@@ -16,6 +16,7 @@ import { CommentsMain } from "#/components/Comments/Comments.Main";
 import { useSWRfetcher } from "#/api/utils";
 import { ShareButton } from "#/components/FloatingToolbar/ShareButton";
 import { FloatingToolbar } from "#/components/FloatingToolbar/FloatingToolbar";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ViewCollectionPage = (props: { id: number }) => {
   const userStore = useUserStore();
@@ -80,35 +81,37 @@ export const ViewCollectionPage = (props: { id: number }) => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center w-full h-screen">
+      <div className="empty">
         <Spinner />
+        <p>Загружаем коллекцию</p>
       </div>
     );
   }
 
   if (error || collectionInfoError) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Ошибка</h1>
-          <p className="text-lg">
-            Произошла ошибка при загрузке коллекции. Попробуйте обновить
-            страницу или зайдите позже.
-          </p>
-        </div>
-      </main>
+      <div className="empty">
+        <span className="empty-ic">
+          <Icon name="info" size={32} />
+        </span>
+        <div className="empty-t">Ошибка</div>
+        <p>
+          Произошла ошибка при загрузке коллекции. Попробуйте обновить страницу
+          или зайдите позже.
+        </p>
+      </div>
     );
   }
 
   return (
     <>
       {collectionInfoIsLoading ?
-        <div className="flex items-center justify-center w-full h-screen">
+        <div className="empty">
           <Spinner />
         </div>
       : collectionInfo && (
           <>
-            <div className="flex flex-col flex-wrap gap-2 px-2 pb-2 sm:flex-row">
+            <div className="collview">
               <CollectionInfoBasics
                 image={collectionInfo.collection.image}
                 title={collectionInfo.collection.title}
@@ -119,7 +122,7 @@ export const ViewCollectionPage = (props: { id: number }) => {
                 creationDate={collectionInfo.collection.creation_date}
                 updateDate={collectionInfo.collection.last_update_date}
               />
-              <div className="flex flex-col gap-2 w-full max-w-full lg:max-w-[48%]">
+              <div className="collview-side">
                 {collectionComments && !collectionCommentsIsLoading && (
                   <CommentsMain
                     release_id={props.id}

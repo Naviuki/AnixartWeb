@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { _fetchAPI } from "./PlayerParsing";
 import { useUserPlayerPreferencesStore } from "#/store/player";
 import { numberDeclension } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
 
 export interface Voiceover {
   id: number;
@@ -90,7 +91,7 @@ export const VoiceoverSelectorMenu = ({
                             {vo.icon ? <img alt="" className="w-6 h-6 rounded-full" src={vo.icon}></img> : ""}
                             <span className="text-[16px] leading-none whitespace-nowrap">{vo.name}</span>
                             {vo.pinned && (
-                                <span className={`h-4 iconify material-symbols--push-pin ${voiceover.id == vo.id ? "bg-white" : "bg-gray-300 hover:bg-gray-100"} transition-colors`}></span>
+                                <Icon name="pin" size={14} className="vo-pin" />
                             )}
                         </div>
                         <div className="flex gap-2">

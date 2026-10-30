@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  FileInput,
-  Label,
-  Modal,
-  ModalBody,
-  ModalHeader,
-  useThemeMode,
-} from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { Spinner } from "../Spinner/Spinner";
 import useSWR from "swr";
 import { ENDPOINTS } from "#/api/config";
@@ -22,6 +15,7 @@ import { useUserStore } from "#/store/auth";
 import { ProfileEditLoginModal } from "./Profile.EditLoginModal";
 import { toast } from "react-toastify";
 import { ProfileBlockedUsersModal } from "./Profile.BlockedUsersModal";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileEditModal = (props: {
   isOpen: boolean;
@@ -205,206 +199,288 @@ export const ProfileEditModal = (props: {
 
   return (
     <>
-      <Modal
-        show={props.isOpen}
-        onClose={() => props.setIsOpen(false)}
-        size={"7xl"}
-      >
-        <ModalHeader>Редактирование профиля</ModalHeader>
-        <ModalBody>
-          {prefLoading ?
-            <Spinner />
-          : <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 pb-4 border-b-2 border-gray-300 border-solid">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 iconify mdi--user"></span>
-                    <p className="text-xl font-bold">Профиль</p>
+      {props.isOpen && (
+        <div className="md" onClick={() => props.setIsOpen(false)}>
+          <div
+            className="mb"
+            style={{ width: "min(640px, 100%)" }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-head">
+              <h3>Редактирование профиля</h3>
+              <button
+                type="button"
+                className="mb-close"
+                onClick={() => props.setIsOpen(false)}
+                aria-label="Закрыть"
+              >
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+
+            {prefLoading ?
+              <div className="empty" style={{ marginBottom: 0 }}>
+                <Spinner />
+              </div>
+            : <div className="mb-list">
+                <div className="set-group">
+                  <div className="set-group-t">
+                    <Icon name="user" size={18} />
+                    Профиль
                   </div>
-                </div>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  disabled={prefData.is_change_avatar_banned}
-                >
-                  <Label htmlFor="dropzone-file" className="cursor-pointer">
-                    <FileInput
-                      id="dropzone-file"
-                      className="hidden"
-                      accept="image/jpg, image/jpeg, image/png"
-                      onChange={(e) => {
-                        handleAvatarPreview(e);
-                      }}
-                    />
-                    <div>
-                      <p className="text-lg">Изменить фото профиля</p>
-                      <p className="text-base text-gray-500 dark:text-gray-400">
+
+                  <label
+                    htmlFor="dropzone-file"
+                    className={`set-row ${
+                      prefData.is_change_avatar_banned ? "disabled" : ""
+                    }`}
+                  >
+                    <span className="set-ic">
+                      <Icon name="photo" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Изменить фото профиля</span>
+                      <span className="set-s">
                         {prefData.is_change_avatar_banned ?
                           `Заблокировано до ${unixToDate(
                             prefData.ban_change_avatar_expires,
                             "full"
                           )}`
                         : "Загрузить с устройства"}
-                      </p>
-                    </div>
-                  </Label>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setStatusModalOpen(true);
-                  }}
-                >
-                  <p className="text-lg">Изменить статус</p>
-                  <p className="text-base text-gray-500 whitespace-pre dark:text-gray-400">
-                    {status}
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  disabled={prefData.is_change_login_banned}
-                  onClick={() => {
-                    setLoginModalOpen(true);
-                  }}
-                >
-                  <p className="text-lg">Изменить никнейм</p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {prefData.is_change_login_banned ?
-                      `Заблокировано до ${unixToDate(
-                        prefData.ban_change_login_expires,
-                        "full"
-                      )}`
-                    : login}
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setSocialModalOpen(true);
-                  }}
-                >
-                  <p className="text-lg">Мои социальные сети</p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    укажите ссылки на свои страницы в соц. сетях
-                  </p>
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 pb-4 border-b-2 border-gray-300 border-solid">
-                <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 iconify mdi--anonymous "></span>
-                  <p className="text-xl font-bold">Приватность</p>
+                      </span>
+                    </span>
+                    <input
+                      id="dropzone-file"
+                      type="file"
+                      className="hidden"
+                      accept="image/jpg, image/jpeg, image/png"
+                      disabled={prefData.is_change_avatar_banned}
+                      onChange={(e) => {
+                        handleAvatarPreview(e);
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setStatusModalOpen(true);
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="edit" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Изменить статус</span>
+                      <span className="set-s" style={{ whiteSpace: "pre-wrap" }}>
+                        {status}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`set-row ${
+                      prefData.is_change_login_banned ? "disabled" : ""
+                    }`}
+                    disabled={prefData.is_change_login_banned}
+                    onClick={() => {
+                      setLoginModalOpen(true);
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="user" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Изменить никнейм</span>
+                      <span className="set-s">
+                        {prefData.is_change_login_banned ?
+                          `Заблокировано до ${unixToDate(
+                            prefData.ban_change_login_expires,
+                            "full"
+                          )}`
+                        : login}
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setSocialModalOpen(true);
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="link" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Мои социальные сети</span>
+                      <span className="set-s">
+                        укажите ссылки на свои страницы в соц. сетях
+                      </span>
+                    </span>
+                  </button>
                 </div>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setPrivacyModalOpen(true);
-                    setPrivacyModalSetting("privacy_stats");
-                  }}
-                >
-                  <p className="text-lg">
-                    Кто видит мою статистику, оценки и историю просмотра
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {
-                      privacy_stat_act_social_text[
-                        privacySettings.privacy_stats
-                      ]
-                    }
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setPrivacyModalOpen(true);
-                    setPrivacyModalSetting("privacy_counts");
-                  }}
-                >
-                  <p className="text-lg">
-                    Кто видит в профиле мои комментарии, коллекции, видео и
-                    друзей
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {
-                      privacy_stat_act_social_text[
-                        privacySettings.privacy_counts
-                      ]
-                    }
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setPrivacyModalOpen(true);
-                    setPrivacyModalSetting("privacy_social");
-                  }}
-                >
-                  <p className="text-lg">
-                    Кто видит в профиле мои социальные сети
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {
-                      privacy_stat_act_social_text[
-                        privacySettings.privacy_social
-                      ]
-                    }
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setPrivacyModalOpen(true);
-                    setPrivacyModalSetting("privacy_friend_requests");
-                  }}
-                >
-                  <p className="text-lg">
-                    Кто может отправлять мне заявки в друзья
-                  </p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {
-                      privacy_friend_req_text[
-                        privacySettings.privacy_friend_requests
-                      ]
-                    }
-                  </p>
-                </button>
-                <button
-                  className="p-2 text-left rounded-md hover:bg-gray-100 dark:hover:bg-gray-900"
-                  onClick={() => {
-                    setBlockedModalOpen(true);
-                  }}
-                >
-                  <p className="text-lg">Блоклист</p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    Список пользователей, которым запрещён доступ к вашей
-                    странице
-                  </p>
-                </button>
-              </div>
-              <div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 iconify mdi--link"></span>
-                    <p className="text-xl font-bold">Привязка к сервисам</p>
+
+                <div className="set-group">
+                  <div className="set-group-t">
+                    <Icon name="lock" size={18} />
+                    Приватность
                   </div>
-                  <p className="mx-1 text-base text-gray-500 dark:text-gray-400">
-                    Недоступно для изменения в данном клиенте
-                  </p>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setPrivacyModalOpen(true);
+                      setPrivacyModalSetting("privacy_stats");
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="eye" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">
+                        Кто видит мою статистику, оценки и историю просмотра
+                      </span>
+                      <span className="set-s">
+                        {
+                          privacy_stat_act_social_text[
+                            privacySettings.privacy_stats
+                          ]
+                        }
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setPrivacyModalOpen(true);
+                      setPrivacyModalSetting("privacy_counts");
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="eye" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">
+                        Кто видит в профиле мои комментарии, коллекции, видео и
+                        друзей
+                      </span>
+                      <span className="set-s">
+                        {
+                          privacy_stat_act_social_text[
+                            privacySettings.privacy_counts
+                          ]
+                        }
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setPrivacyModalOpen(true);
+                      setPrivacyModalSetting("privacy_social");
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="link" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">
+                        Кто видит в профиле мои социальные сети
+                      </span>
+                      <span className="set-s">
+                        {
+                          privacy_stat_act_social_text[
+                            privacySettings.privacy_social
+                          ]
+                        }
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setPrivacyModalOpen(true);
+                      setPrivacyModalSetting("privacy_friend_requests");
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="users" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">
+                        Кто может отправлять мне заявки в друзья
+                      </span>
+                      <span className="set-s">
+                        {
+                          privacy_friend_req_text[
+                            privacySettings.privacy_friend_requests
+                          ]
+                        }
+                      </span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      setBlockedModalOpen(true);
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="ban" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Блоклист</span>
+                      <span className="set-s">
+                        Список пользователей, которым запрещён доступ к вашей
+                        странице
+                      </span>
+                    </span>
+                  </button>
                 </div>
-                <div className="p-2 mt-2 cursor-not-allowed">
-                  <p className="text-lg">Связанные аккаунты</p>
-                  <p className="text-base text-gray-500 dark:text-gray-400">
-                    {socialBounds.vk || socialBounds.google ?
-                      "Аккаунт привязан к:"
-                    : "не привязан к сервисам"}{" "}
-                    {socialBounds.vk && "ВК"}
-                    {socialBounds.vk && socialBounds.google && ", "}
-                    {socialBounds.google && "Google"}
-                  </p>
+
+                <div className="set-group">
+                  <div className="set-group-t">
+                    <Icon name="link" size={18} />
+                    Привязка к сервисам
+                  </div>
+                  <div className="set-row disabled">
+                    <span className="set-ic">
+                      <Icon name="info" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Связанные аккаунты</span>
+                      <span className="set-s">
+                        {socialBounds.vk || socialBounds.google ?
+                          "Аккаунт привязан к:"
+                        : "не привязан к сервисам"}{" "}
+                        {socialBounds.vk && "ВК"}
+                        {socialBounds.vk && socialBounds.google && ", "}
+                        {socialBounds.google && "Google"}
+                      </span>
+                      <span className="set-s">
+                        Недоступно для изменения в данном клиенте
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          }
-        </ModalBody>
-      </Modal>
+            }
+          </div>
+        </div>
+      )}
       {props.token ?
         <>
           <ProfileEditPrivacyModal

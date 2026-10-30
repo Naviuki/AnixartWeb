@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import Link from "next/link";
 import { Spinner } from "#/components/Spinner/Spinner";
 import { useSWRfetcher } from "#/api/utils";
 import { useUserStore } from "#/store/auth";
@@ -22,6 +23,7 @@ import { ContinueWatching } from "#/components/ContinueWatching/ContinueWatching
 import { ShareButton } from "#/components/FloatingToolbar/ShareButton";
 import { FloatingToolbar } from "#/components/FloatingToolbar/FloatingToolbar";
 import { DownloadButton } from "#/components/FloatingToolbar/DownloadButton";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ReleasePage = (props: any) => {
   const userStore = useUserStore();
@@ -54,57 +56,54 @@ export const ReleasePage = (props: any) => {
 
   if (isLoading) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
+      <div className="empty">
         <Spinner />
-      </main>
+        <p>Загружаем релиз</p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold">Ошибка</h1>
-          <p className="text-lg">
-            Произошла ошибка при загрузке релиза. Попробуйте обновить страницу
-            или зайдите позже.
-          </p>
-        </div>
-      </main>
+      <div className="empty">
+        <span className="empty-ic">
+          <Icon name="info" size={32} />
+        </span>
+        <div className="empty-t">Ошибка</div>
+        <p>
+          Произошла ошибка при загрузке релиза. Попробуйте обновить страницу или
+          зайдите позже.
+        </p>
+      </div>
     );
   }
 
+  const isAnnounce =
+    data.release.status &&
+    data.release.status.name.toLowerCase() == "анонс";
+
   return (
-    <div className="flex flex-col gap-2 pb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-2 grid-flow-row-dense">
-        <ReleaseInfoBasics
-          image={data.release.image}
-          title={{
-            ru: data.release.title_ru,
-            original: data.release.title_original,
-          }}
-          description={data.release.description}
-          note={data.release.note}
-          release_id={data.release.id}
-        />
-        <ReleaseInfoInfo
-          country={data.release.country}
-          aired_on_date={data.release.aired_on_date}
-          year={data.release.year}
-          episodes={{
-            total: data.release.episodes_total,
-            released: data.release.episodes_released,
-          }}
-          season={data.release.season}
-          status={data.release.status ? data.release.status.name : "Анонс"}
-          duration={data.release.duration}
-          category={data.release.category.name}
-          broadcast={data.release.broadcast}
-          studio={data.release.studio}
-          author={data.release.author}
-          director={data.release.director}
-          genres={data.release.genres}
-        />
+    <>
+      <div className="crumbs">
+        <Link href="/">Главная</Link>
+        <Icon name="chevron" size={14} />
+        <Link href={`/search?query=${data.release.category.name}`}>
+          {data.release.category.name}
+        </Link>
+        <Icon name="chevron" size={14} />
+        <span>{data.release.title_ru}</span>
+      </div>
+
+      <ReleaseInfoBasics
+        image={data.release.image}
+        title={{
+          ru: data.release.title_ru,
+          original: data.release.title_original,
+        }}
+        description={data.release.description}
+        note={data.release.note}
+        release_id={data.release.id}
+      >
         <ReleaseInfoUserList
           userList={userList}
           isFavorite={userFavorite}
@@ -115,24 +114,25 @@ export const ReleasePage = (props: any) => {
           setIsFavorite={setUserFavorite}
           collection_count={data.release.collection_count}
         />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-2 grid-flow-row-dense">
-        <div className="flex flex-col gap-2">
-          {data.release.status &&
-            data.release.status.name.toLowerCase() != "анонс" && (
-              <>
-                {preferenceStore.params.experimental.newPlayer ?
-                  <ReleasePlayerCustom
-                    id={props.id}
-                    token={userStore.token}
-                    title={
-                      data.release.title_ru || data.release.title_original || ""
-                    }
-                  />
-                : <ReleasePlayer id={props.id} />}
-              </>
-            )}
-          <div className="hidden lg:block">
+      </ReleaseInfoBasics>
+
+      <div className="rel-grid">
+        <div className="rel-main">
+          {data.release.status && !isAnnounce && (
+            <>
+              {preferenceStore.params.experimental.newPlayer ?
+                <ReleasePlayerCustom
+                  id={props.id}
+                  token={userStore.token}
+                  title={
+                    data.release.title_ru || data.release.title_original || ""
+                  }
+                />
+              : <ReleasePlayer id={props.id} />}
+            </>
+          )}
+
+          <div className="desk-only">
             <CommentsMain
               release_id={props.id}
               token={userStore.token}
@@ -140,26 +140,44 @@ export const ReleasePage = (props: any) => {
             />
           </div>
         </div>
-        <div className="flex flex-col gap-2">
-          {data.release.status &&
-            data.release.status.name.toLowerCase() != "анонс" && (
-              <div className="[grid-column:2]">
-                <ReleaseInfoRating
-                  release_id={props.id}
-                  grade={data.release.grade}
-                  token={userStore.token}
-                  votes={{
-                    1: data.release.vote_1_count,
-                    2: data.release.vote_2_count,
-                    3: data.release.vote_3_count,
-                    4: data.release.vote_4_count,
-                    5: data.release.vote_5_count,
-                    total: data.release.vote_count,
-                    user: data.release.your_vote,
-                  }}
-                />
-              </div>
-            )}
+
+        <aside className="rel-side">
+          <ReleaseInfoInfo
+            country={data.release.country}
+            aired_on_date={data.release.aired_on_date}
+            year={data.release.year}
+            episodes={{
+              total: data.release.episodes_total,
+              released: data.release.episodes_released,
+            }}
+            season={data.release.season}
+            status={data.release.status ? data.release.status.name : "Анонс"}
+            duration={data.release.duration}
+            category={data.release.category.name}
+            broadcast={data.release.broadcast}
+            studio={data.release.studio}
+            author={data.release.author}
+            director={data.release.director}
+            genres={data.release.genres}
+          />
+
+          {data.release.status && !isAnnounce && (
+            <ReleaseInfoRating
+              release_id={props.id}
+              grade={data.release.grade}
+              token={userStore.token}
+              votes={{
+                1: data.release.vote_1_count,
+                2: data.release.vote_2_count,
+                3: data.release.vote_3_count,
+                4: data.release.vote_4_count,
+                5: data.release.vote_5_count,
+                total: data.release.vote_count,
+                user: data.release.your_vote,
+              }}
+            />
+          )}
+
           <InfoLists
             completed={data.release.completed_count}
             planned={data.release.plan_count}
@@ -167,9 +185,11 @@ export const ReleasePage = (props: any) => {
             delayed={data.release.hold_on_count}
             watching={data.release.watching_count}
           />
+
           {data.release.screenshot_images.length > 0 && (
             <ReleaseInfoScreenshots images={data.release.screenshot_images} />
           )}
+
           {data.release.related_releases.length > 0 && (
             <ReleaseInfoRelated
               release_id={props.id}
@@ -177,16 +197,19 @@ export const ReleasePage = (props: any) => {
               related_releases={data.release.related_releases}
             />
           )}
+
           {userStore.token && <ContinueWatching />}
-          <div className="block lg:hidden">
+
+          <div className="mob-only">
             <CommentsMain
               release_id={props.id}
               token={userStore.token}
               comments={data.release.comments}
             />
           </div>
-        </div>
+        </aside>
       </div>
+
       <FloatingToolbar>
         <ShareButton
           text={`Смотреть '${data.release.title_ru || data.release.title_original} (${data.release.year || "?"}г.)' на Anixart`}
@@ -197,6 +220,6 @@ export const ReleasePage = (props: any) => {
           release_title_en={data.release.title_original}
         />
       </FloatingToolbar>
-    </div>
+    </>
   );
 };

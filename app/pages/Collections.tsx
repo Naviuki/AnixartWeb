@@ -7,6 +7,8 @@ import { useUserStore } from "#/store/auth";
 import { ENDPOINTS } from "#/api/config";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 export function CollectionsPage() {
   const userStore = useUserStore();
@@ -41,17 +43,19 @@ export function CollectionsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userStore.state, userStore.token]);
 
+  const isEmpty =
+    userCollections &&
+    favoriteCollections &&
+    (userCollections.content || []).length == 0 &&
+    (favoriteCollections.content || []).length == 0;
+
   return (
     <>
-      {userStore.state === "loading" &&
-        (!userCollections || !favoriteCollections) && (
-          <div className="flex items-center justify-center min-w-full min-h-screen">
-            <Spinner />
-          </div>
-        )}
+      <PageHead title="Коллекции" subtitle="Ваши подборки и избранное" />
 
       <form
-        className="flex-1 max-w-full mx-4 mb-4"
+        className="form"
+        style={{ marginBottom: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
           router.push(
@@ -59,47 +63,29 @@ export function CollectionsPage() {
           );
         }}
       >
-        <label
-          htmlFor="default-search"
-          className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
-        >
-          Search
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 flex items-center pointer-events-none start-0 ps-3">
-            <svg
-              className="w-4 h-4 text-gray-500 dark:text-gray-400"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 20 20"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-              />
-            </svg>
-          </div>
+        <div style={{ display: "flex", gap: 8 }}>
           <input
             type="search"
-            id="default-search"
-            className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg ps-10 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Поиск коллекций..."
+            aria-label="Поиск по коллекциям"
             required
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />
-          <button
-            type="submit"
-            className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-          >
+          <button type="submit" className="btn p" style={{ flex: "none" }}>
+            <Icon name="search" size={16} />
             Поиск
           </button>
         </div>
       </form>
+
+      {userStore.state === "loading" &&
+        (!userCollections || !favoriteCollections) && (
+          <div className="empty">
+            <Spinner />
+            <p>Загружаем коллекции</p>
+          </div>
+        )}
 
       {userCollections && userCollections.content && (
         <CollectionCourusel
@@ -119,16 +105,27 @@ export function CollectionsPage() {
           />
         )}
 
+      {isEmpty && (
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="collection" size={32} />
+          </span>
+          <div className="empty-t">Пока пусто</div>
+          <p>У вас ещё нет коллекций. Создайте первую подборку.</p>
+        </div>
+      )}
+
       {(userCollectionsError || favoriteCollectionsError) && (
-        <main className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">Ошибка</h1>
-            <p className="text-lg">
-              Произошла ошибка при загрузке коллекций. Попробуйте обновить
-              страницу или зайдите позже.
-            </p>
-          </div>
-        </main>
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="info" size={32} />
+          </span>
+          <div className="empty-t">Ошибка</div>
+          <p>
+            Произошла ошибка при загрузке коллекций. Попробуйте обновить страницу
+            или зайдите позже.
+          </p>
+        </div>
       )}
     </>
   );

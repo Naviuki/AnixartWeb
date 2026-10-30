@@ -1,10 +1,11 @@
 "use client";
 
-import { Modal, ModalBody, ModalHeader, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { ENDPOINTS } from "#/api/config";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { tryCatchAPI } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileEditPrivacyModal = (props: {
   isOpen: boolean;
@@ -36,6 +37,18 @@ export const ProfileEditPrivacyModal = (props: {
 
   const [loading, setLoading] = useState(false);
   const theme = useThemeMode();
+
+  const options =
+    props.setting == "privacy_friend_requests" ?
+      [
+        { value: 0, name: "Все пользователи" },
+        { value: 1, name: "Никто" },
+      ]
+    : [
+        { value: 0, name: "Все пользователи" },
+        { value: 1, name: "Только друзья" },
+        { value: 2, name: "Только я" },
+      ];
 
   async function _setPrivacySetting(el: any) {
     let privacySettings = structuredClone(props.privacySettings);
@@ -91,118 +104,56 @@ export const ProfileEditPrivacyModal = (props: {
     props.setIsOpen(false);
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"4xl"}
-    >
-      <ModalHeader>{setting_text[props.setting]}</ModalHeader>
-      <ModalBody>
-        {props.setting != "none" ?
-          <>
-            <div className="flex flex-col gap-2">
-              {props.setting == "privacy_friend_requests" ?
-                <>
-                  <div className="flex items-center">
-                    <input
-                      disabled={loading}
-                      onChange={(e) => _setPrivacySetting(e)}
-                      checked={props.privacySettings[props.setting] == 0}
-                      id="default-radio-1"
-                      type="radio"
-                      value={0}
-                      name={props.setting}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor="default-radio-1"
-                      className="text-base text-gray-900 ms-2 dark:text-gray-300"
-                    >
-                      Все пользователи
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      disabled={loading}
-                      onChange={(e) => _setPrivacySetting(e)}
-                      checked={props.privacySettings[props.setting] == 1}
-                      id="default-radio-2"
-                      type="radio"
-                      value={1}
-                      name={props.setting}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor="default-radio-2"
-                      className="text-base text-gray-900 ms-2 dark:text-gray-300"
-                    >
-                      Никто
-                    </label>
-                  </div>
-                </>
-              : <>
-                  <div className="flex items-center">
-                    <input
-                      disabled={loading}
-                      onChange={(e) => _setPrivacySetting(e)}
-                      checked={props.privacySettings[props.setting] == 0}
-                      id="default-radio-1"
-                      type="radio"
-                      value={0}
-                      name={props.setting}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor="default-radio-1"
-                      className="text-base text-gray-900 ms-2 dark:text-gray-300"
-                    >
-                      Все пользователи
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      disabled={loading}
-                      onChange={(e) => _setPrivacySetting(e)}
-                      checked={props.privacySettings[props.setting] == 1}
-                      id="default-radio-2"
-                      type="radio"
-                      value={1}
-                      name={props.setting}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor="default-radio-2"
-                      className="text-base text-gray-900 ms-2 dark:text-gray-300"
-                    >
-                      Только друзья
-                    </label>
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      disabled={loading}
-                      onChange={(e) => _setPrivacySetting(e)}
-                      checked={props.privacySettings[props.setting] == 2}
-                      id="default-radio-3"
-                      type="radio"
-                      value={2}
-                      name={props.setting}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <label
-                      htmlFor="default-radio-3"
-                      className="text-base text-gray-900 ms-2 dark:text-gray-300"
-                    >
-                      Только я
-                    </label>
-                  </div>
-                </>
-              }
-            </div>
-          </>
-        : ""}
-      </ModalBody>
-    </Modal>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(520px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>{setting_text[props.setting]}</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        {props.setting != "none" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {options.map((option) => (
+              <label
+                className={`opt-row ${
+                  props.privacySettings[props.setting] == option.value ?
+                    "on"
+                  : ""
+                }`}
+                key={`${props.setting}-${option.value}`}
+              >
+                <input
+                  disabled={loading}
+                  onChange={(e) => _setPrivacySetting(e)}
+                  checked={props.privacySettings[props.setting] == option.value}
+                  id={`${props.setting}-${option.value}`}
+                  type="radio"
+                  value={option.value}
+                  name={props.setting}
+                />
+                {option.name}
+                {props.privacySettings[props.setting] == option.value && (
+                  <Icon name="check" size={16} className="accent" />
+                )}
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };

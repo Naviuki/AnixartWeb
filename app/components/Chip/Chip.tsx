@@ -1,3 +1,7 @@
+import { Icon } from "#/components/Icon/Icon";
+
+// Универсальная плашка-чип. Не используется новыми компонентами,
+// оставлена для совместимости.
 export const Chip = (props: {
   icon_name?: string;
   icon_color?: string;
@@ -8,24 +12,29 @@ export const Chip = (props: {
   style?: React.CSSProperties;
   className?: string;
 }) => {
+  const raw = props.icon_name || "";
+  const segments = raw.split("--");
+  const iconName = (segments.length > 1 ? segments[segments.length - 1] : raw)
+    .replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+
   return (
-    <div className={`${props.bg_color || "bg-gray-500"} rounded-sm flex items-center justify-center ${props.className || ""} bg-opacity-80 backdrop-blur-sm`}>
+    <div
+      className={`chip ${props.className || ""}`}
+      style={{
+        ...props.style,
+        ...(props.bg_color ? { background: props.bg_color } : {}),
+      }}
+    >
       {props.icon_name && (
-        <span
-          className={`iconify w-4 h-4 sm:w-6 sm:h-6 ml-2 ${props.icon_name}`}
-          style={
-            {
-              color: "var(--icon-color)",
-              "--icon-color": props.icon_color || "#fff",
-            } as React.CSSProperties
-          }
-        ></span>
+        <span style={{ color: props.icon_color || "currentColor" }}>
+          <Icon name={iconName} size={14} />
+        </span>
       )}
-      <p className="px-2 py-1 text-white xl:text-base">
+      <span>
         {props.name}
         {props.name && props.devider ? props.devider : " "}
         {props.name_2}
-      </p>
+      </span>
     </div>
   );
 };

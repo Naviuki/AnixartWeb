@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { sinceUnixDate, unixToDate } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileActivityComment = (props: {
   content: any;
@@ -12,81 +13,83 @@ export const ProfileActivityComment = (props: {
         props.content.map((comment) => {
           let isHidden = comment.isSpoiler || comment.likes_count < -5 || false;
           return (
-            <article
-              className="px-4 py-2 text-sm bg-gray-100 rounded-lg sm:text-base dark:bg-gray-900"
-              key={`comment-${comment.id}`}
-            >
-              <footer className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1">
-                  <Link
-                    href={`/profile/${comment.profile.id}`}
-                    className="inline-flex items-center mr-3 text-sm font-semibold text-gray-900 dark:text-white hover:underline"
+            <article className="comment" key={`comment-${comment.id}`}>
+              <div className="comment-head">
+                <Link
+                  href={`/profile/${comment.profile.id}`}
+                  className="comment-ava"
+                >
+                  <Image
+                    width={28}
+                    height={28}
+                    src={comment.profile.avatar}
+                    alt=""
+                  />
+                </Link>
+                <Link
+                  href={`/profile/${comment.profile.id}`}
+                  className="comment-name"
+                >
+                  {comment.profile.login}
+                </Link>
+                <span className="comment-date">
+                  <time
+                    dateTime={comment.timestamp.toString()}
+                    title={unixToDate(comment.timestamp, "full")}
                   >
-                    <Image
-                      className="w-6 h-6 mr-2 rounded-full"
-                      width={24}
-                      height={24}
-                      src={comment.profile.avatar}
-                      alt=""
-                    />
-                    {comment.profile.login}
-                  </Link>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    <time
-                      dateTime={comment.timestamp.toString()}
-                      title={unixToDate(comment.timestamp, "full")}
-                    >
-                      {sinceUnixDate(comment.timestamp)}
-                    </time>
-                  </p>
-                  <p
-                    className={`text-sm font-medium border px-1 py-0.5 rounded-md text-center ml-4 min-w-8 ${
-                      comment.likes_count > 0 ?
-                        "text-green-500 dark:text-green-400 border-green-500 dark:border-green-400"
-                      : comment.likes_count < 0 ?
-                        "text-red-500 dark:text-red-400 border-red-500 dark:border-red-400"
-                      : "text-gray-500 dark:text-gray-400 border-gray-500 dark:border-gray-400"
-                    }`}
-                  >
-                    {comment.likes_count}
-                  </p>
-                </div>
-              </footer>
-              <div className="relative flex flex-col py-2">
+                    {sinceUnixDate(comment.timestamp)}
+                  </time>
+                </span>
+                <span
+                  className="badge"
+                  style={{
+                    marginLeft: "auto",
+                    color:
+                      comment.likes_count > 0 ? "var(--rate-5)"
+                      : comment.likes_count < 0 ? "var(--rate-1)"
+                      : "var(--t3)",
+                  }}
+                >
+                  <Icon
+                    name={comment.likes_count < 0 ? "dislike" : "like"}
+                    size={12}
+                  />
+                  {comment.likes_count}
+                </span>
+              </div>
+
+              <div className="comment-text">
                 {comment.release && typeof comment.release != "number" && (
                   <Link href={`/release/${comment.release.id}`}>
-                    <p className="text-gray-900 whitespace-pre-wrap dark:text-gray-500">
+                    <p className="accent small" style={{ marginBottom: 4 }}>
                       {!comment.isDeleted ?
-                        `К релизу: ${comment.release.title_ru || comment.release.title_alt || comment.release.title_original} (${comment.release.year || "?"}) >>`
+                        `К релизу: ${comment.release.title_ru || comment.release.title_alt || comment.release.title_original} (${comment.release.year || "?"})`
                       : ""}
                     </p>
                   </Link>
                 )}
-                <p className="text-gray-800 whitespace-pre-wrap dark:text-gray-400">
-                  {!comment.isDeleted ?
-                    comment.message
-                  : "Комментарий был удалён."}
-                </p>
+                {!comment.isDeleted ?
+                  comment.message
+                : "Комментарий был удалён."}
                 {isHidden && (
                   <button
-                    className="absolute top-0 bottom-0 left-0 right-0"
-                    onClick={() => isHidden == false}
+                    type="button"
+                    className="comment-spoiler"
+                    onClick={() => (isHidden = false)}
                   >
-                    <div className="min-w-full min-h-full px-2 py-1.5 rounded-md bg-black text-white bg-opacity-50 backdrop-blur-[8px] flex flex-col justify-center items-center">
-                      <p>
-                        {comment.likes_count < -5 ?
-                          "У комментария слишком низкий рейтинг."
-                        : "Данный комментарий может содержать спойлер."}
-                      </p>
-                      <p className="font-bold">Нажмите, чтобы прочитать</p>
-                    </div>
+                    <span>
+                      {comment.likes_count < -5 ?
+                        "У комментария слишком низкий рейтинг."
+                      : "Данный комментарий может содержать спойлер."}
+                    </span>
+                    <b>Нажмите, чтобы прочитать</b>
                   </button>
                 )}
               </div>
             </article>
           );
         })
-      : <p className="text-lg">Пользователь не оставлял комментарии</p>}
+      : <p className="muted">Пользователь не оставлял комментарии</p>}
     </>
   );
 };

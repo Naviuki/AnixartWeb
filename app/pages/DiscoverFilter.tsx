@@ -8,10 +8,11 @@ import { ReleaseSection } from "#/components/ReleaseSection/ReleaseSection";
 import { Spinner } from "#/components/Spinner/Spinner";
 import { useScrollPosition } from "#/hooks/useScrollPosition";
 import { useUserStore } from "#/store/auth";
-import { Button } from "flowbite-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 const postFetcher = async (url: string, payload: string) => {
   const { data, error } = await tryCatchAPI(
@@ -106,36 +107,46 @@ export const DiscoverFilterPage = () => {
   if (!filter) return <></>;
 
   return (
-    <div>
-      {error ?
-        <div className="flex flex-col justify-between w-full p-4 border border-red-200 rounded-md md:flex-row bg-red-50 dark:bg-red-700 dark:border-red-600">
-          <div className="mb-4 md:mb-0 md:me-4">
-            <p>Произошла ошибка фильтра</p>
+    <>
+      <PageHead title="Фильтр" subtitle="Подбор релизов по параметрам" />
+
+      {error && (
+        <div className="banner danger" style={{ marginBottom: 14 }}>
+          <span className="banner-ic">
+            <Icon name="info" size={18} />
+          </span>
+          <div style={{ minWidth: 0 }}>
+            <div className="banner-s">Произошла ошибка фильтра</div>
           </div>
         </div>
-      : <></>}
-      {content ?
-        <ReleaseSection content={content} sectionTitle={"Фильтр"} />
-      : <></>}
-      {isLoading ?
-        <div className="flex items-center justify-center w-full h-16">
+      )}
+
+      {content && <ReleaseSection content={content} />}
+
+      {isLoading && (
+        <div className="empty" style={{ marginBottom: 0 }}>
           <Spinner />
         </div>
-      : ""}
+      )}
+
       <FloatingToolbar>
-        <Button
-          className="flex items-center justify-center px-4 py-2 transition-colors first:rounded-l-full last:rounded-r-full hover:bg-gray-300 hover:dark:bg-slate-500"
+        <button
+          type="button"
+          className="btn p"
+          style={{ borderRadius: 999, padding: 10 }}
           onClick={() => setFiltersModalOpen(true)}
+          aria-label="Открыть фильтр"
         >
-          <span className="flex-shrink-0 inline-block w-8 h-8 iconify mdi--mixer-settings"></span>
-        </Button>
+          <Icon name="filter" size={18} />
+        </button>
       </FloatingToolbar>
+
       <FiltersModal
         isOpen={FiltersModalOpen}
         setIsOpen={setFiltersModalOpen}
         filter={filter}
         setFilter={setFilter}
       />
-    </div>
+    </>
   );
 };

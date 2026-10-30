@@ -1,28 +1,16 @@
-import {
-  Button,
-  Card,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  Rating,
-  RatingAdvanced,
-  RatingStar,
-  RatingAdvancedTheme,
-} from "flowbite-react";
 import { numberDeclension } from "#/api/utils";
 import { useState } from "react";
 import { ENDPOINTS } from "#/api/config";
+import { Icon } from "#/components/Icon/Icon";
 
-const CustomRatingTheme: RatingAdvancedTheme = {
-  base: "flex items-center",
-  label: "text-sm font-medium text-cyan-600 dark:text-cyan-500",
-  progress: {
-    base: "mx-4 h-5 w-3/4 rounded bg-gray-200 dark:bg-gray-700",
-    fill: "h-5 rounded bg-yellow-400",
-    label: "text-sm font-medium text-cyan-600 dark:text-cyan-500",
-  },
+const rateColor = (value: number) => {
+  if (value >= 5) return "var(--rate-5)";
+  if (value >= 4) return "var(--rate-4)";
+  if (value >= 3) return "var(--rate-3)";
+  if (value >= 2) return "var(--rate-2)";
+  return "var(--rate-1)";
 };
+
 export const ReleaseInfoRating = (props: {
   release_id: number;
   grade: number;
@@ -40,96 +28,53 @@ export const ReleaseInfoRating = (props: {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [vote, setVote] = useState(props.votes.user);
 
+  const percent = (value: number) => {
+    if (!props.votes.total) return 0;
+    return Math.floor((props.votes[value] / props.votes.total) * 100);
+  };
+
   return (
     <>
-      <Card>
-        <div className="flex flex-col gap-2 sm:items-center sm:flex-row">
-          <Rating>
-            <RatingStar />
-            <p className="ml-2 text-sm font-bold dark:text-white">
-              {props.grade.toFixed(2)} из 5
-            </p>
-          </Rating>
+      <div className="box">
+        <div className="rate-head">
+          <Icon name="star" size={20} className="accent" fill />
+          <b>{props.grade.toFixed(2)}</b>
+          <span className="muted small">из 5</span>
+          <span className="muted small">
+            {props.votes.total}{" "}
+            {numberDeclension(props.votes.total, "голос", "голоса", "голосов")}
+          </span>
           {props.token && (
-            <>
-              <span className="mx-1.5 h-1 w-1 rounded-full bg-gray-500 dark:bg-gray-400 hidden lg:block" />
-              <div className="flex items-center gap-2">
-                {vote ?
-                  <>
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      ваша оценка: {vote}
-                    </p>
-                    <Button
-                      size={"xs"}
-                      className="text-gray-500 border border-gray-600 rounded-full hover:bg-black hover:text-white hover:border-black dark:text-gray-400 dark:border-gray-500"
-                      color="inline"
-                      onClick={() => setIsRatingModalOpen(true)}
-                    >
-                      изменить
-                    </Button>
-                  </>
-                : <Button
-                    size={"xs"}
-                    className="text-gray-500 border border-gray-600 rounded-full hover:bg-black hover:text-white hover:border-black dark:text-gray-400 dark:border-gray-500"
-                    color="inline"
-                    onClick={() => setIsRatingModalOpen(true)}
-                  >
-                    оценить
-                  </Button>
-                }
-              </div>
-            </>
+            <button
+              type="button"
+              className="btn"
+              style={{ marginLeft: "auto", padding: "5px 10px", fontSize: 12 }}
+              onClick={() => setIsRatingModalOpen(true)}
+            >
+              {vote ? `Ваша оценка: ${vote}` : "Оценить"}
+            </button>
           )}
         </div>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          {props.votes.total}{" "}
-          {numberDeclension(props.votes.total, "голос", "голоса", "голосов")}
-        </p>
-        <RatingAdvanced
-          theme={CustomRatingTheme}
-          percentFilled={Math.floor(
-            (props.votes["5"] / props.votes.total) * 100
-          )}
-          className="mb-2"
-        >
-          5
-        </RatingAdvanced>
-        <RatingAdvanced
-          theme={CustomRatingTheme}
-          percentFilled={Math.floor(
-            (props.votes["4"] / props.votes.total) * 100
-          )}
-          className="mb-2"
-        >
-          4
-        </RatingAdvanced>
-        <RatingAdvanced
-          theme={CustomRatingTheme}
-          percentFilled={Math.floor(
-            (props.votes["3"] / props.votes.total) * 100
-          )}
-          className="mb-2"
-        >
-          3
-        </RatingAdvanced>
-        <RatingAdvanced
-          theme={CustomRatingTheme}
-          percentFilled={Math.floor(
-            (props.votes["2"] / props.votes.total) * 100
-          )}
-          className="mb-2"
-        >
-          2
-        </RatingAdvanced>
-        <RatingAdvanced
-          theme={CustomRatingTheme}
-          percentFilled={Math.floor(
-            (props.votes["1"] / props.votes.total) * 100
-          )}
-        >
-          1
-        </RatingAdvanced>
-      </Card>
+
+        <div className="ratebars">
+          {[5, 4, 3, 2, 1].map((value) => (
+            <div className="ratebar" key={`rate-${value}`}>
+              <span className="ratebar-n">{value}</span>
+              <span className="ratebar-track">
+                <i
+                  className="ratebar-fill"
+                  style={{
+                    width: `${percent(value)}%`,
+                    background: rateColor(value),
+                  }}
+                />
+              </span>
+              <span className="ratebar-pct">{percent(value)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <ReleaseInfoRatingModal
         isOpen={isRatingModalOpen}
         setIsOpen={setIsRatingModalOpen}
@@ -180,66 +125,76 @@ const ReleaseInfoRatingModal = (props: {
     }
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-    >
-      <ModalHeader>Оценка</ModalHeader>
-      <ModalBody>
-        <div>
-          <div className="block sm:hidden">
-            <Rating size="md" className="justify-center">
-              {[1, 2, 3, 4, 5].map((element, index) => (
-                <Button
-                  key={`rating-md-${element}`}
-                  color={"inline"}
-                  onMouseOver={() => setCurElement(element)}
-                  onMouseOut={() => setCurElement(0)}
-                  onClick={() => setVote(element)}
-                >
-                  <RatingStar
-                    filled={index + 1 <= curElement || index + 1 <= vote}
-                  />
-                </Button>
-              ))}
-            </Rating>
-          </div>
-          <div className="hidden sm:block">
-            <Rating size="lg" className="justify-center">
-              {[1, 2, 3, 4, 5].map((element, index) => (
-                <Button
-                  key={`rating-lg-${element}`}
-                  color={"inline"}
-                  onMouseOver={() => setCurElement(element)}
-                  onMouseOut={() => setCurElement(0)}
-                  onClick={() => setVote(element)}
-                >
-                  <RatingStar
-                    filled={index + 1 <= curElement || index + 1 <= vote}
-                  />
-                </Button>
-              ))}
-            </Rating>
-          </div>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        style={{ width: "min(420px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-head">
+          <h3>Оценка</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
         </div>
-      </ModalBody>
-      <ModalFooter>
-        <div className="flex gap-1 ml-auto">
-          <Button
+
+        <div
+          className="stars"
+          onMouseLeave={() => setCurElement(0)}
+          role="group"
+          aria-label="Оценка от 1 до 5"
+        >
+          {[1, 2, 3, 4, 5].map((element) => (
+            <button
+              key={`rating-${element}`}
+              type="button"
+              className={element <= (curElement || vote) ? "on" : ""}
+              onMouseOver={() => setCurElement(element)}
+              onFocus={() => setCurElement(element)}
+              onClick={() => setVote(element)}
+              aria-label={`${element} из 5`}
+            >
+              <Icon
+                name="star"
+                size={30}
+                fill={element <= (curElement || vote)}
+              />
+            </button>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            marginTop: 18,
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            className="btn g"
             disabled={isSending}
-            color={"red"}
             onClick={() => {
               setIsSending(true);
               _setVote("delete", null);
             }}
           >
             Убрать оценку
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
+            className="btn p"
             disabled={isSending || vote === null}
-            color={"blue"}
             onClick={() => {
               setIsSending(true);
               _sendVote("delete", null);
@@ -247,9 +202,9 @@ const ReleaseInfoRatingModal = (props: {
             }}
           >
             Оценить
-          </Button>
+          </button>
         </div>
-      </ModalFooter>
-    </Modal>
+      </div>
+    </div>
   );
 };

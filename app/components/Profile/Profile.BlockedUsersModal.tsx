@@ -1,10 +1,11 @@
 import { ENDPOINTS } from "#/api/config";
 import { tryCatchAPI, unixToDate, useSWRfetcher } from "#/api/utils";
-import { Avatar, Button, Modal, ModalHeader, useThemeMode } from "flowbite-react";
+import { useThemeMode } from "flowbite-react";
 import { useCallback, useEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
 import { Spinner } from "../Spinner/Spinner";
 import { toast } from "react-toastify";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ProfileBlockedUsersModal = (props: {
   isOpen: boolean;
@@ -122,56 +123,71 @@ export const ProfileBlockedUsersModal = (props: {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollPosition]);
+
+  if (!props.isOpen) return <></>;
+
   return (
-    <>
-      <Modal
-        dismissible
-        show={props.isOpen}
-        onClose={() => props.setIsOpen(false)}
-        size={"7xl"}
+    <div className="md" onClick={() => props.setIsOpen(false)}>
+      <div
+        className="mb"
+        onClick={(event) => event.stopPropagation()}
+        style={{ width: "min(720px, 100%)" }}
       >
-        <ModalHeader>Заблокированные пользователи</ModalHeader>
-        <div
-          className="flex flex-col gap-2 p-4 overflow-y-auto"
-          onScroll={handleScroll}
-          ref={modalRef}
-        >
+        <div className="mb-head">
+          <h3>Заблокированные пользователи</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" onScroll={handleScroll} ref={modalRef}>
           {content && content.length > 0 ?
             content.map((user) => {
               return (
-                <div className="flex items-center justify-between gap-2" key={`blockeduser-${user.id}`}>
-                  <div className="flex gap-2">
-                    <Avatar
-                      alt=""
-                      img={user.avatar}
-                      rounded={true}
-                      size={"md"}
-                      bordered={true}
-                      color={user.is_online ? "success" : "light"}
-                      className="flex-shrink-0"
-                    />
-                    <div className="flex flex-col gap-1">
-                      <p className="text-lg font-semibold">{user.login}</p>
-                      <p>Заблокирован: {unixToDate(user.added_date, "full")}</p>
-                    </div>
-                  </div>
-                  <Button
-                    color={!unblockedUsers.includes(user.id) ? "blue" : "red"}
-                    onClick={() => _addToBlocklist(user.id)}
-                    disabled={actionsDisabled}
-                    className="flex-grow-0 h-fit"
-                  >
-                    {!unblockedUsers.includes(user.id) ?
-                      "Разблокировать"
-                    : "Заблокировать"}
-                  </Button>
+                <div className="row" key={`blockeduser-${user.id}`}>
+                  <span className="friend-ava">
+                    {user.avatar ?
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={user.avatar} alt="" />
+                    : user.login[0].toUpperCase()}
+                  </span>
+                  <span className="row-body">
+                    <span className="row-title">{user.login}</span>
+                    <span className="row-sub">
+                      Заблокирован: {unixToDate(user.added_date, "full")}
+                    </span>
+                  </span>
+                  <span className="row-right">
+                    <button
+                      type="button"
+                      className={`btn ${
+                        !unblockedUsers.includes(user.id) ? "p" : "danger"
+                      }`}
+                      onClick={() => _addToBlocklist(user.id)}
+                      disabled={actionsDisabled}
+                      style={{ padding: "5px 10px", fontSize: 12 }}
+                    >
+                      {!unblockedUsers.includes(user.id) ?
+                        "Разблокировать"
+                      : "Заблокировать"}
+                    </button>
+                  </span>
                 </div>
               );
             })
-          : "Нет заблокированных пользователей"}
-          {isLoading && <Spinner />}
+          : <p className="muted small">Нет заблокированных пользователей</p>}
+          {isLoading && (
+            <div className="empty" style={{ marginBottom: 0 }}>
+              <Spinner />
+            </div>
+          )}
         </div>
-      </Modal>
-    </>
+      </div>
+    </div>
   );
 };

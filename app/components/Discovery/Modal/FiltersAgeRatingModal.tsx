@@ -1,16 +1,8 @@
 "use client";
 
 import { FilterAgeRatingToString } from "#/api/utils";
-import {
-  Button,
-  Checkbox,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-} from "flowbite-react";
 import { useEffect, useState } from "react";
+import { Icon } from "#/components/Icon/Icon";
 
 type Props = {
   isOpen: boolean;
@@ -39,68 +31,96 @@ export const FiltersAgeRatingModal = ({
     setNewAgeRatings(ageRatings);
   }, [ageRatings]);
 
+  if (!isOpen) return null;
+
   return (
-    <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible>
-      <ModalHeader>Выберите списки</ModalHeader>
-      <ModalBody>
-        {Object.entries(FilterAgeRatingToString).map(([key, value]) => {
-          return (
-            <div
-              className="flex items-center gap-2"
-              key={`filter-age-rating-${value}`}
-            >
-              <Checkbox
-                id={`filter-age-rating-${value}`}
-                onChange={() => toggleRating(Number(key))}
-                checked={newAgeRatings.includes(Number(key))}
-                color="blue"
-              />
-              <Label htmlFor={`filter-age-rating-${value}`}>{value}</Label>
-            </div>
-          );
-        })}
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          onClick={() => {
-            setAgeRatings([]);
-            setNewAgeRatings([]);
-            setIsOpen(false);
-          }}
-          color="red"
-        >
-          Сбросить
-        </Button>
-        <Button
-          onClick={() => {
-            setAgeRatings(newAgeRatings);
-            setNewAgeRatings([]);
-            setIsOpen(false);
-          }}
-          color="blue"
-        >
-          Применить
-        </Button>
-        <Button
-          onClick={() => {
-            if (
-              newAgeRatings.length !=
-              Object.keys(FilterAgeRatingToString).length
-            ) {
-              setNewAgeRatings(
-                Object.keys(FilterAgeRatingToString).map((key) => Number(key))
-              );
-            } else {
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
+    >
+      <div className="mb" style={{ width: "min(520px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Возрастное ограничение</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="check-list">
+          {Object.entries(FilterAgeRatingToString).map(([key, value]) => {
+            return (
+              <label
+                className="check"
+                key={`filter-age-rating-${value}`}
+                style={{ margin: 0 }}
+              >
+                <input
+                  type="checkbox"
+                  onChange={() => toggleRating(Number(key))}
+                  checked={newAgeRatings.includes(Number(key))}
+                />
+                <span>{value}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn danger"
+            onClick={() => {
+              setAgeRatings([]);
               setNewAgeRatings([]);
-            }
-          }}
-          color="light"
-        >
-          {newAgeRatings.length >= Object.keys(FilterAgeRatingToString).length ?
-            "Снять все"
-          : "Выбрать все"}
-        </Button>
-      </ModalFooter>
-    </Modal>
+              setIsOpen(false);
+            }}
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => {
+              if (
+                newAgeRatings.length !=
+                Object.keys(FilterAgeRatingToString).length
+              ) {
+                setNewAgeRatings(
+                  Object.keys(FilterAgeRatingToString).map((key) => Number(key))
+                );
+              } else {
+                setNewAgeRatings([]);
+              }
+            }}
+          >
+            {newAgeRatings.length >=
+            Object.keys(FilterAgeRatingToString).length ?
+              "Снять все"
+            : "Выбрать все"}
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => {
+              setAgeRatings(newAgeRatings);
+              setNewAgeRatings([]);
+              setIsOpen(false);
+            }}
+          >
+            <Icon name="check" size={16} />
+            Применить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

@@ -1,10 +1,11 @@
-import { Button, Card, Modal, ModalHeader, Spinner } from "flowbite-react";
 import { CommentsComment } from "./Comments.Comment";
 import { useState, useEffect, useCallback } from "react";
 import { ENDPOINTS } from "#/api/config";
 import useSWRInfinite from "swr/infinite";
 import { CommentsAddModal } from "./Comments.Add";
 import { useSWRfetcher } from "#/api/utils";
+import { Spinner } from "#/components/Spinner/Spinner";
+import { Icon } from "#/components/Icon/Icon";
 
 export const CommentsMain = (props: {
   release_id: number;
@@ -18,30 +19,33 @@ export const CommentsMain = (props: {
 
   return (
     <>
-      <Card className="antialiased">
-        <div className="w-full">
-          <div className="flex flex-col justify-start gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-lg font-bold text-gray-900 lg:text-2xl dark:text-white">
-                Комментарии
-              </h2>
-              <p className="text-sm font-bold text-gray-600 dark:text-gray-300">
-                Популярные и актуальные
-              </p>
-            </div>
-            <div className="flex items-end gap-2">
-              {props.token && (
-                <Button onClick={() => setIsAddCommentsOpen(true)} color="blue">
-                  Оставить комментарий
-                </Button>
-              )}
-              <Button onClick={() => setIsAllCommentsOpen(true)} color="light">
-                Показать все
-              </Button>
-            </div>
+      <div className="box">
+        <div className="sh" style={{ marginBottom: 12 }}>
+          <h2>Комментарии</h2>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {props.token && (
+              <button
+                type="button"
+                className="btn p"
+                onClick={() => setIsAddCommentsOpen(true)}
+              >
+                <Icon name="plus" size={16} />
+                Оставить комментарий
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setIsAllCommentsOpen(true)}
+            >
+              Показать все
+            </button>
           </div>
-          <div className="flex flex-col gap-2">
-            {props.comments && props.comments.map((comment: any) => (
+        </div>
+
+        <div>
+          {props.comments && props.comments.length > 0 ?
+            props.comments.map((comment: any) => (
               <CommentsComment
                 key={comment.id}
                 release_id={props.release_id}
@@ -61,10 +65,17 @@ export const CommentsMain = (props: {
                 isSubComment={type != "release"}
                 type={type}
               />
-            ))}
-          </div>
+            ))
+          : <div className="empty" style={{ marginBottom: 0, padding: "28px 16px" }}>
+              <span className="empty-ic" style={{ width: 56, height: 56 }}>
+                <Icon name="comment" size={24} />
+              </span>
+              <p>Комментариев пока нет</p>
+            </div>
+          }
         </div>
-      </Card>
+      </div>
+
       <CommentsAllModal
         isOpen={isAllCommentsOpen}
         setIsOpen={setIsAllCommentsOpen}
@@ -143,56 +154,61 @@ const CommentsAllModal = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollPosition]);
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-    >
-      <ModalHeader>
-        <div className="flex flex-col gap-1">
-          <h2 className="text-lg font-bold text-gray-900 lg:text-2xl dark:text-white">
-            Все комментарии
-          </h2>
-          <p className="text-sm font-light text-gray-600 dark:text-gray-300">
-            всего: {isLoading ? "загрузка..." : data[0].total_count}
-          </p>
-        </div>
-      </ModalHeader>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
       <div
-        className="flex flex-col gap-2 p-4 overflow-y-auto"
-        onScroll={handleScroll}
-        ref={modalRef}
+        className="mb"
+        style={{ width: "min(720px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
       >
-        {isLoading ? (
-          <Spinner />
-        ) : content ? (
-          content.map((comment: any) => (
-            <CommentsComment
-              release_id={props.release_id}
-              key={comment.id}
-              profile={comment.profile}
-              comment={{
-                id: comment.id,
-                timestamp: comment.timestamp,
-                message: comment.message,
-                reply_count: comment.reply_count,
-                likes_count: comment.likes_count,
-                vote: comment.vote,
-                isSpoiler: comment.is_spoiler,
-                isEdited: comment.is_edited,
-                isDeleted: comment.is_deleted,
-              }}
-              token={props.token}
-              type={type}
-            />
-          ))
-        ) : (
-          <p className="text-sm font-bold text-gray-600 dark:text-gray-300">
-            Комментариев нет
-          </p>
-        )}
+        <div className="mb-head">
+          <div>
+            <h3>Все комментарии</h3>
+            <p className="muted small">
+              всего: {isLoading || !data ? "загрузка..." : data[0].total_count}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" onScroll={handleScroll} ref={modalRef}>
+          {isLoading ?
+            <div className="empty" style={{ marginBottom: 0 }}>
+              <Spinner />
+            </div>
+          : content ?
+            content.map((comment: any) => (
+              <CommentsComment
+                release_id={props.release_id}
+                key={comment.id}
+                profile={comment.profile}
+                comment={{
+                  id: comment.id,
+                  timestamp: comment.timestamp,
+                  message: comment.message,
+                  reply_count: comment.reply_count,
+                  likes_count: comment.likes_count,
+                  vote: comment.vote,
+                  isSpoiler: comment.is_spoiler,
+                  isEdited: comment.is_edited,
+                  isDeleted: comment.is_deleted,
+                }}
+                token={props.token}
+                type={type}
+              />
+            ))
+          : <p className="muted small">Комментариев нет</p>}
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 };

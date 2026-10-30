@@ -6,10 +6,12 @@ import { CollectionsSection } from "#/components/CollectionsSection/CollectionsS
 import { Spinner } from "#/components/Spinner/Spinner";
 import { useScrollPosition } from "#/hooks/useScrollPosition";
 import { useUserStore } from "#/store/auth";
-import { Button, ButtonGroup } from "flowbite-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Chip, ChipRow } from "#/components/Chips/ChipRow";
+import { Icon } from "#/components/Icon/Icon";
 
 export const DiscoverCollectionsSort = [
   {
@@ -119,36 +121,37 @@ export const DiscoverCollectionsPage = () => {
 
   return (
     <>
-      <div className="mb-4 overflow-x-auto">
-          <ButtonGroup>
-            {Object.entries(DiscoverCollectionsSort).map(([key, item]) => {
-              return (
-                <Button
-                  key={`discover-collections-sort-${item.id}`}
-                  onClick={() => setSelectedSort(item.id)}
-                  color={selectedSort == item.id ? "blue" : "light"}
-                >
-                  {item.name}
-                </Button>
-              );
-            })}
-          </ButtonGroup>
-      </div>
+      <PageHead title="Коллекции" subtitle="Подборки сообщества Anixart" />
+
+      <ChipRow>
+        {DiscoverCollectionsSort.map((item) => (
+          <Chip
+            key={`discover-collections-sort-${item.id}`}
+            active={selectedSort == item.id}
+            onClick={() => setSelectedSort(item.id)}
+          >
+            {item.name}
+          </Chip>
+        ))}
+      </ChipRow>
+
       {error ?
-        <main className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">Ошибка</h1>
-            <p className="text-lg">
-              Произошла ошибка при загрузке коллекций. Попробуйте обновить
-              страницу или зайдите позже.
-            </p>
-          </div>
-        </main>
-      : isLoading || !content ?
-        <div className="flex flex-col items-center justify-center min-w-full min-h-screen">
-          <Spinner />
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="info" size={32} />
+          </span>
+          <div className="empty-t">Ошибка</div>
+          <p>
+            Произошла ошибка при загрузке коллекций. Попробуйте обновить
+            страницу или зайдите позже.
+          </p>
         </div>
-      : <CollectionsSection content={content} sectionTitle={"Коллекции"} />}
+      : isLoading || !content ?
+        <div className="empty">
+          <Spinner />
+          <p>Загружаем коллекции</p>
+        </div>
+      : <CollectionsSection content={content} />}
     </>
   );
 };

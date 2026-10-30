@@ -6,9 +6,10 @@ import { useState, useEffect } from "react";
 import { useScrollPosition } from "#/hooks/useScrollPosition";
 import { useUserStore } from "../store/auth";
 import { ENDPOINTS } from "#/api/config";
-import { Button } from "flowbite-react";
 import { useRouter } from "next/navigation";
 import { useSWRfetcher } from "#/api/utils";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 export function HistoryPage() {
   const token = useUserStore((state) => state.token);
@@ -57,8 +58,11 @@ export function HistoryPage() {
 
   return (
     <>
+      <PageHead title="История" subtitle="Последние просмотренные релизы" />
+
       <form
-        className="flex-1 max-w-full mx-4 mb-4"
+        className="form"
+        style={{ marginBottom: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
           router.push(
@@ -66,70 +70,59 @@ export function HistoryPage() {
           );
         }}
       >
-        <label
-          htmlFor="default-search"
-          className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
-        >
-          Search
-        </label>
-        <div className="relative">
-          <div className="absolute inset-y-0 flex items-center pointer-events-none start-0 ps-3">
-            <svg
-              className="w-4 h-4 text-gray-500 dark:text-gray-400"
-              aria-hidden="true"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 20 20"
-            >
-              <path
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-              />
-            </svg>
-          </div>
+        <div style={{ display: "flex", gap: 8 }}>
           <input
             type="search"
-            id="default-search"
-            className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg ps-10 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             placeholder="Поиск аниме..."
+            aria-label="Поиск по истории"
             required
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />
-          <button
-            type="submit"
-            className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-          >
+          <button type="submit" className="btn p" style={{ flex: "none" }}>
+            <Icon name="search" size={16} />
             Поиск
           </button>
         </div>
       </form>
-      {content && content.length > 0 ?
+
+      {error ?
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="info" size={32} />
+          </span>
+          <div className="empty-t">Ошибка</div>
+          <p>
+            Произошла ошибка при загрузке истории. Попробуйте обновить страницу
+            или зайдите позже.
+          </p>
+        </div>
+      : content && content.length > 0 ?
         <>
-          <ReleaseSection sectionTitle="История" content={content} />
+          <ReleaseSection content={content} showLastWatched />
           {data && data[0].total_count != content.length && (
-            <Button
-              className="w-full"
-              color={"light"}
+            <button
+              type="button"
+              className="btn g"
+              style={{ width: "100%", marginTop: 16 }}
               onClick={() => setSize(size + 1)}
             >
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 iconify mdi--plus-circle "></span>
-                <span className="text-lg">Загрузить ещё</span>
-              </div>
-            </Button>
+              <Icon name="plus" size={16} />
+              Загрузить ещё
+            </button>
           )}
         </>
       : isLoading ?
-        <div className="flex flex-col items-center justify-center min-w-full min-h-[100dvh]">
+        <div className="empty">
           <Spinner />
+          <p>Загружаем историю</p>
         </div>
-      : <div className="flex flex-col items-center justify-center min-w-full gap-4 mt-12 text-xl">
-          <span className="w-24 h-24 iconify-color twemoji--broken-heart"></span>
-          <p>В истории пока ничего нет...</p>
+      : <div className="empty">
+          <span className="empty-ic">
+            <Icon name="history" size={32} />
+          </span>
+          <div className="empty-t">Пока пусто</div>
+          <p>В истории пока ничего нет.</p>
         </div>
       }
     </>

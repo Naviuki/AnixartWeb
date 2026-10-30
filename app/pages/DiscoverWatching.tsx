@@ -9,6 +9,8 @@ import { useUserStore } from "#/store/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
+import { PageHead } from "#/components/PageHead/PageHead";
+import { Icon } from "#/components/Icon/Icon";
 
 export const DiscoverWatchingPage = () => {
   const userStore = useUserStore();
@@ -54,26 +56,31 @@ export const DiscoverWatchingPage = () => {
 
   return (
     <>
+      <PageHead title="Смотрят сейчас" subtitle="Релизы, которые смотрят прямо сейчас" />
+
       {error ?
-        <main className="flex items-center justify-center min-h-screen">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl font-bold">Ошибка</h1>
-            <p className="text-lg">
-              Произошла ошибка при загрузке. Попробуйте обновить страницу или
-              зайдите позже.
-            </p>
-          </div>
-        </main>
+        <div className="empty">
+          <span className="empty-ic">
+            <Icon name="info" size={32} />
+          </span>
+          <div className="empty-t">Ошибка</div>
+          <p>
+            Произошла ошибка при загрузке. Попробуйте обновить страницу или
+            зайдите позже.
+          </p>
+        </div>
       : !content ?
-        <div className="flex flex-col items-center justify-center min-w-full min-h-screen">
+        <div className="empty">
+          <Spinner />
+          <p>Загружаем релизы</p>
+        </div>
+      : <ReleaseSection content={content} />}
+
+      {content && isLoading && (
+        <div className="empty" style={{ marginBottom: 0 }}>
           <Spinner />
         </div>
-      : <ReleaseSection content={content} sectionTitle={"Смотрят сейчас"} />}
-      {content && isLoading ?
-        <div className="flex flex-col items-center justify-center min-w-full min-h-16">
-          <Spinner />
-        </div>
-      : ""}
+      )}
     </>
   );
 };

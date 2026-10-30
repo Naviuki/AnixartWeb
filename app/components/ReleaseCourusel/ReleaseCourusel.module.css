@@ -1,21 +1,9 @@
-.swiper-button:global(.swiper-button-disabled) {
-  opacity: 0 !important;
+/* Ширина слайда важнее правила Swiper .swiper-slide { width: 100% } */
+.slide:global(.swiper-slide) {
+  width: var(--cw);
+  height: auto;
 }
 
-.section .swiper-button {
-  display: none !important;
-}
-
-@media (hover: hover) and (min-width: 1024px) {
-  .swiper {
-    overflow: visible !important;
-  }
-}
-
-@media (hover: hover) {
-  .section:hover .swiper-button {
-    display: flex !important;
-    width: 64px;
-    height: 64px;
-  }
+body[data-card="list"] .slide:global(.swiper-slide) {
+  width: 320px;
 }

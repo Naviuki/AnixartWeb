@@ -1,9 +1,9 @@
 "use client";
-import { Button, ButtonGroup, Card } from "flowbite-react";
 import { ProfileActivityCollections } from "./Profile.ActivityCollections";
 import { useEffect, useState } from "react";
 import { ProfileActivityFriends } from "./Profile.ActivityFriends";
 import { ProfileActivityComment } from "./Profile.ActivityComment";
+import { Icon } from "#/components/Icon/Icon";
 
 export function ProfileActivity(props: {
   profile_id: number;
@@ -54,38 +54,34 @@ export function ProfileActivity(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.collectionPreview]);
 
+  const TABS = [
+    { id: "collections", name: "Коллекции", count: props.collectionCount },
+    { id: "comments", name: "Комментарии", count: props.commentCount },
+    { id: "friends", name: "Друзья", count: props.friendsCount },
+  ] as const;
+
   return (
-    <Card className="overflow-hidden h-fit">
-      <h1 className="text-2xl font-bold">Активность</h1>
-      <ButtonGroup>
-        <Button
-          color={tab == "collections" ? "blue" : "light"}
-          onClick={() => setTab("collections")}
-        >
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
-            <p>Коллекции</p>
-            <p>( {props.collectionCount} )</p>
-          </div>
-        </Button>
-        <Button
-          color={tab == "comments" ? "blue" : "light"}
-          onClick={() => setTab("comments")}
-        >
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
-            <p>Комментарии</p>
-            <p>( {props.commentCount} )</p>
-          </div>
-        </Button>
-        <Button
-          color={tab == "friends" ? "blue" : "light"}
-          onClick={() => setTab("friends")}
-        >
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center">
-            <p>Друзья</p>
-            <p>( {props.friendsCount} )</p>
-          </div>
-        </Button>
-      </ButtonGroup>
+    <div className="box">
+      <div className="sh" style={{ marginBottom: 12 }}>
+        <h2>
+          <Icon name="sparkle" size={18} />
+          Активность
+        </h2>
+      </div>
+
+      <div className="chiprow" style={{ marginBottom: 14 }}>
+        {TABS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`chip ${tab === item.id ? "active" : ""}`}
+            onClick={() => setTab(item.id)}
+          >
+            {item.name}
+            <span className="badge soft">{item.count}</span>
+          </button>
+        ))}
+      </div>
 
       {tab == "collections" && (
         <ProfileActivityCollections
@@ -107,6 +103,6 @@ export function ProfileActivity(props: {
           profile_id={props.profile_id}
         />
       )}
-    </Card>
+    </div>
   );
 }

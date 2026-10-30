@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import Cropper, { ReactCropperElement } from "react-cropper";
 import "cropperjs/dist/cropper.css";
-import { Button, Modal, ModalBody, ModalFooter, ModalHeader } from "flowbite-react";
+import { Icon } from "#/components/Icon/Icon";
 
 type CropModalProps = {
   isOpen: boolean;
@@ -57,70 +57,100 @@ export const CropModal: React.FC<CropModalProps> = ({
     }
   };
 
-  return (
-    <Modal
-      dismissible
-      show={isOpen}
-      onClose={() => {
-        setCropModalProps({
-          isOpen: false,
-          isActionsDisabled: false,
-          selectedImage: null,
-          croppedImage: null,
-        });
-      }}
-      size={"7xl"}
-    >
-      <ModalHeader>Обрезать изображение</ModalHeader>
-      <ModalBody>
-        <Cropper
-          src={selectedImage}
-          style={{ height: 400, width: "100%" }}
-          responsive={true}
-          // Cropper.js options
-          initialAspectRatio={cropParams.aspectRatio || 1 / 1}
-          aspectRatio={
-            cropParams.forceAspect || false ? cropParams.aspectRatio : undefined
-          }
-          guides={cropParams.guides || false}
-          ref={cropperRef}
-        />
+  if (!isOpen) return null;
 
-        <div className="mt-4">
-          <h2 className="font-bold text-md">Управление</h2>
-          <p>Тяните за углы что-бы выбрать область</p>
+  return (
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          setCropModalProps({
+            isOpen: false,
+            isActionsDisabled: false,
+            selectedImage: null,
+            croppedImage: null,
+          });
+        }
+      }}
+    >
+      <div className="mb" style={{ width: "min(1100px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Обрезать изображение</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() =>
+              setCropModalProps({
+                isOpen: false,
+                isActionsDisabled: false,
+                selectedImage: null,
+                croppedImage: null,
+              })
+            }
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="crop-area">
+          <Cropper
+            src={selectedImage}
+            style={{ height: 400, width: "100%" }}
+            responsive={true}
+            initialAspectRatio={cropParams.aspectRatio || 1 / 1}
+            aspectRatio={
+              cropParams.forceAspect || false
+                ? cropParams.aspectRatio
+                : undefined
+            }
+            guides={cropParams.guides || false}
+            ref={cropperRef}
+          />
+        </div>
+
+        <div className="crop-help">
+          <h4>Управление</h4>
+          <p>Тяните за углы, чтобы выбрать область</p>
           <p>
-            Нажмите 2 раза на пустое место, что бы поменять режим выбора области
+            Нажмите два раза на пустое место, чтобы поменять режим выбора области
             на перемещение и обратно
           </p>
-          <p>Используйте колёсико мыши что-бы изменить масштаб</p>
+          <p>Используйте колёсико мыши, чтобы изменить масштаб</p>
         </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          color={"blue"}
-          disabled={isActionsDisabled}
-          onClick={() => {
-            getCropData();
-          }}
-        >
-          Сохранить
-        </Button>
-        <Button
-          color={"red"}
-          disabled={isActionsDisabled}
-          onClick={() => {
-            setCropModalProps({
-              isOpen: false,
-              isActionsDisabled: false,
-              selectedImage: null,
-              croppedImage: null,
-            });
-          }}
-        >
-          Отменить
-        </Button>
-      </ModalFooter>
-    </Modal>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn p"
+            disabled={isActionsDisabled}
+            onClick={() => {
+              getCropData();
+            }}
+          >
+            <Icon name="check" size={16} />
+            Сохранить
+          </button>
+          <button
+            type="button"
+            className="btn danger"
+            disabled={isActionsDisabled}
+            onClick={() => {
+              setCropModalProps({
+                isOpen: false,
+                isActionsDisabled: false,
+                selectedImage: null,
+                croppedImage: null,
+              });
+            }}
+          >
+            <Icon name="x" size={16} />
+            Отменить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

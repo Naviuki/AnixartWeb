@@ -1,6 +1,13 @@
-import { Poster } from "./Poster";
+import Image from "next/image";
 import { ReleaseChips } from "./Chips";
 import { getFixedGrade, getUserList, sinceUnixDate } from "#/api/utils";
+import { Icon } from "#/components/Icon/Icon";
+
+const STATUS_NAMES: Record<number, string> = {
+  1: "Вышел",
+  2: "Выходит",
+  3: "Анонс",
+};
 
 export const PosterWithStuff = (props: {
   image: string;
@@ -26,6 +33,7 @@ export const PosterWithStuff = (props: {
   lastWatchedHidden?: boolean;
   profile_list_status?: number;
   status?: {
+    id?: number;
     name: string;
   };
   category?: {
@@ -52,66 +60,115 @@ export const PosterWithStuff = (props: {
   const showLastWatched =
     (!props.lastWatchedHidden && props.last_view_episode) || false;
 
+  const statusName =
+    (props.status_id && STATUS_NAMES[props.status_id]) ||
+    (props.status?.id && STATUS_NAMES[props.status.id]) ||
+    props.status?.name;
+
+  const episodes =
+    props.episodes_released || props.episodes_total ?
+      `${props.episodes_released || "?"}${
+        props.episodes_total ? `/${props.episodes_total}` : ""
+      } эп.`
+    : "";
+
+  const watchedEpisode = props.last_view_episode
+    ? props.last_view_episode.name ||
+      `${(props.last_view_episode.position || 0) + 1} серия`
+    : "";
+
+  const progress =
+    showLastWatched && props.episodes_total ?
+      Math.min(
+        100,
+        Math.max(
+          0,
+          (((props.last_view_episode?.position || 0) + 1) /
+            Number(props.episodes_total)) *
+            100
+        )
+      )
+    : 0;
+
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg group">
-      {showLastWatched ?
-        <div className="px-2 pt-2 pb-4 text-xs text-gray-700 bg-gray-100 border border-gray-300 rounded-t-lg dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 iconify mdi--clock-outline"></span>
-            <p className="line-clamp-1">
-              {props.last_view_timestamp &&
-                sinceUnixDate(props.last_view_timestamp)}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 h-4 iconify mdi--local-movies"></span>
-            <p className="line-clamp-1">
-              {props.last_view_episode.name ?
-                props.last_view_episode.name
-              : `${props.last_view_episode.position + 1} серия`}
-            </p>
-          </div>
+    <div className="rcard">
+      {showLastWatched && (
+        <div className="rcard-watch">
+          <Icon name="clock" size={12} />
+          <span>
+            {props.last_view_timestamp
+              ? sinceUnixDate(props.last_view_timestamp)
+              : ""}
+          </span>
+          <span>·</span>
+          <span>{watchedEpisode}</span>
         </div>
-      : ""}
-      <div
-        className={`absolute z-20 ${showLastWatched ? "top-14" : "top-2"} left-2 right-2`}
-      >
-        <ReleaseChips
-          {...props}
-          user_list={user_list}
-          grade={grade}
-          settings={chipsSettings}
-        ></ReleaseChips>
+      )}
+
+      <div className="rcard-poster">
+        <Image
+          src={props.image}
+          alt={props.title_ru || ""}
+          fill
+          sizes="(max-width: 760px) 45vw, 220px"
+          className="object-cover"
+        />
+        <div className="rcard-grad" />
+        {statusName && <span className="rcard-badge">{statusName}</span>}
+        {grade ? (
+          <span className="rcard-rate">
+            <i
+              className="rcard-dot"
+              style={{
+                background:
+                  grade >= 4.5 ? "var(--rate-5)"
+                  : grade >= 3.5 ? "var(--rate-4)"
+                  : grade >= 2.5 ? "var(--rate-3)"
+                  : grade >= 1.5 ? "var(--rate-2)"
+                  : "var(--rate-1)",
+              }}
+            />
+            {grade}
+          </span>
+        ) : null}
+        <span className="rcard-title">{props.title_ru}</span>
       </div>
-      <div className="absolute z-20 bottom-2 left-2 right-2 lg:translate-y-[100%] group-hover:lg:translate-y-0 transition-transform">
-        <div className="lg:-translate-y-[calc(100%_+_1rem)] group-hover:lg:translate-y-0 transition-transform">
-          {settings.showGenres && (
-            <span className="hidden font-light leading-none text-white transition-opacity group-hover:opacity-0 sm:inline md:text-sm lg:text-base xl:text-lg">
-              {props.genres}
-            </span>
-          )}
-          {props.title_ru && (
-            <p className="text-xl font-bold !leading-none text-white md:text-2xl md:py-0 line-clamp-2">
-              {props.title_ru}
-            </p>
-          )}
-          {props.title_original && (
-            <p className="hidden mt-1 text-sm leading-none text-gray-300 sm:[display:-webkit-box] md:text-base line-clamp-2">
-              {props.title_original}
-            </p>
-          )}
-        </div>
-        {settings.showDescription && props.description && (
-          <p className="mt-2 text-sm font-light leading-[1.25] text-white lg:text-base xl:text-lg hidden sm:[display:-webkit-box] line-clamp-4">
-            {props.description}
-          </p>
+
+      <span className="rcard-below">{props.title_ru}</span>
+
+      <div className="rcard-meta">
+        {episodes && <span>{episodes}</span>}
+        {settings.showGenres && props.genres && (
+          <>
+            {episodes && <span>·</span>}
+            <span className="rcard-genres">{props.genres}</span>
+          </>
+        )}
+        {!episodes && !(settings.showGenres && props.genres) && props.category && (
+          <span>{props.category.name}</span>
         )}
       </div>
-      <div className="absolute w-full h-full rounded-b-lg bg-gradient-to-t from-black to-transparent"></div>
-      <Poster
-        image={props.image}
-        className={`w-auto h-auto min-w-full min-h-full ${showLastWatched ? "-mt-2" : ""} flex-grow-1`}
-      ></Poster>
+
+      <ReleaseChips
+        {...props}
+        settings={{
+          ...chipsSettings,
+          gradeHidden: true,
+          statusHidden: true,
+        }}
+        user_list={user_list}
+        grade={grade}
+      />
+
+      {settings.showDescription && props.description && (
+        <p className="rcard-desc">{props.description}</p>
+      )}
+
+      {progress > 0 && (
+        <div className="rcard-pg">
+          <i style={{ width: `${progress}%` }} />
+        </div>
+      )}
     </div>
   );
 };

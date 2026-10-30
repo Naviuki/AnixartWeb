@@ -6,16 +6,15 @@
   display: none !important;
 }
 
-@media (hover: hover) and (min-width: 1024px) {
-  .swiper {
-    overflow: visible !important;
-  }
-}
-
 @media (hover: hover) {
   .swiper:hover .swiper-button {
     display: flex !important;
     width: 64px;
     height: 64px;
   }
+}
+
+/* Слайды не должны растягиваться по ширине контейнера */
+.swiper :global(.swiper-slide) {
+  width: auto;
 }

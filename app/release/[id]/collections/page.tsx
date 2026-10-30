@@ -38,16 +38,16 @@ export default async function Collections({ params }) {
   );
 
   if (error) {
-    <main className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold">Ошибка</h1>
-        <p className="text-lg">
+    return (
+      <div className="empty">
+        <div className="empty-t">Ошибка</div>
+        <p>
           Произошла ошибка при загрузке коллекций. Попробуйте обновить страницу
           или зайдите позже.
         </p>
       </div>
-    </main>;
-  };
+    );
+  }
 
   return (
     <CollectionsFullPage

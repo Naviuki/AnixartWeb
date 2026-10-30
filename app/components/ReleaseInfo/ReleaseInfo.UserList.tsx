@@ -1,11 +1,11 @@
-import { Card, Dropdown, Button, Modal } from "flowbite-react";
+import { Dropdown, DropdownItem, useThemeMode } from "flowbite-react";
 import { ENDPOINTS } from "#/api/config";
 import Link from "next/link";
 import useSWRInfinite from "swr/infinite";
 import { useCallback, useEffect, useState } from "react";
 import { tryCatchAPI, useSWRfetcher } from "#/api/utils";
 import { toast } from "react-toastify";
-import { DropdownItem, ModalHeader, useThemeMode } from "flowbite-react";
+import { Icon } from "#/components/Icon/Icon";
 
 const lists = [
   { list: 0, name: "Не смотрю" },
@@ -142,67 +142,69 @@ export const ReleaseInfoUserList = (props: {
   }
 
   return (
-    <Card className="h-full">
-      <div className="flex flex-wrap gap-1">
-        <Button color={"blue"} size="sm" className={props.token ? "w-full sm:w-[49%] lg:w-full 2xl:w-[60%]" : "w-full"}>
-          <Link href={`/release/${props.release_id}/collections`}>
-            Показать в коллекциях{" "}
-            <span className="p-1 ml-1 text-gray-500 rounded bg-gray-50">
-              {props.collection_count}
-            </span>
+    <>
+      {props.token ?
+        <>
+          <Link
+            href={`/release/${props.release_id}/collections`}
+            className="btn p"
+          >
+            <Icon name="collection" size={16} />
+            Показать в коллекциях
+            <span className="badge soft">{props.collection_count}</span>
           </Link>
-        </Button>
-        {props.token && (
-          <Button
-            color={"blue"}
-            size="sm"
-            className="w-full sm:w-1/2 lg:w-full 2xl:w-[39%]"
+
+          <button
+            type="button"
+            className="btn"
             onClick={() => setAddReleaseToCollectionModalOpen(true)}
           >
-            В коллекцию{" "}
-            <span className="w-6 h-6 iconify mdi--bookmark-add "></span>
-          </Button>
-        )}
-        {props.token ?
-          <>
-            <Dropdown
-              label={lists[props.userList].name}
-              dismissOnClick={true}
-              theme={DropdownTheme}
-              color="blue"
-              size="sm"
-              disabled={listEventDisabled}
-            >
-              {lists.map((list) => (
-                <DropdownItem
-                  key={list.list}
-                  onClick={() => _addToList(list.list)}
-                >
-                  {list.name}
-                </DropdownItem>
-              ))}
-            </Dropdown>
-            <Button
-              color="blue"
-              onClick={() => {
-                _addToFavorite();
-              }}
-              size="sm"
-              disabled={favButtonDisabled}
-            >
-              <span
-                className={`iconify w-6 h-6 ${
-                  props.isFavorite ? "mdi--heart" : "mdi--heart-outline"
-                }`}
-              ></span>
-            </Button>
-          </>
-        : <div className="flex items-center justify-center w-full gap-2 px-2 py-2 text-gray-600 bg-gray-200 rounded-lg dark:text-gray-200 dark:bg-gray-600">
-            <span className="w-6 h-6 iconify material-symbols--info-outline"></span>
-            <p>Войдите что-бы добавить в список, избранное или коллекцию</p>
-          </div>
-        }
-      </div>
+            <Icon name="plus" size={16} />
+            В коллекцию
+          </button>
+
+          <Dropdown
+            label={lists[props.userList].name}
+            dismissOnClick={true}
+            theme={DropdownTheme}
+            disabled={listEventDisabled}
+            renderTrigger={() => (
+              <button type="button" className="btn" disabled={listEventDisabled}>
+                <Icon name="bookmark" size={16} />
+                {lists[props.userList].name}
+              </button>
+            )}
+          >
+            {lists.map((list) => (
+              <DropdownItem
+                key={list.list}
+                onClick={() => _addToList(list.list)}
+              >
+                {list.name}
+              </DropdownItem>
+            ))}
+          </Dropdown>
+
+          <button
+            type="button"
+            className={`btn icon-only ${props.isFavorite ? "p" : ""}`}
+            onClick={() => _addToFavorite()}
+            disabled={favButtonDisabled}
+            aria-label={
+              props.isFavorite ? "Убрать из избранного" : "Добавить в избранное"
+            }
+            title={
+              props.isFavorite ? "Убрать из избранного" : "Добавить в избранное"
+            }
+          >
+            <Icon name="heart" size={18} />
+          </button>
+        </>
+      : <div className="rhero-note" style={{ margin: 0, maxWidth: 420 }}>
+          Войдите что-бы добавить в список, избранное или коллекцию
+        </div>
+      }
+
       <AddReleaseToCollectionModal
         isOpen={AddReleaseToCollectionModalOpen}
         setIsOpen={setAddReleaseToCollectionModalOpen}
@@ -210,7 +212,7 @@ export const ReleaseInfoUserList = (props: {
         token={props.token}
         profile_id={props.profile_id}
       />
-    </Card>
+    </>
   );
 };
 
@@ -315,38 +317,58 @@ const AddReleaseToCollectionModal = (props: {
     }
   }
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-    >
-      <ModalHeader>Выбор коллекции</ModalHeader>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
       <div
-        className="flex flex-col gap-2 p-4 overflow-y-auto"
-        onScroll={handleScroll}
-        ref={modalRef}
+        className="mb"
+        style={{ width: "min(560px, 100%)" }}
+        onClick={(event) => event.stopPropagation()}
       >
-        {content && content.length > 0 ?
-          content.map((collection) => (
-            <button
-              className="relative w-full h-64 overflow-hidden bg-center bg-no-repeat bg-cover rounded-sm group-hover:animate-bg_zoom animate-bg_zoom_rev group-hover:[background-size:110%] "
-              style={{
-                backgroundImage: `linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.9) 100%), url(${collection.image})`,
-              }}
-              key={`collection_${collection.id}`}
-              onClick={() => _addToCollection(collection)}
-            >
-              <div className="absolute bottom-0 left-0 gap-1 p-2">
-                <p className="text-xl font-bold text-white">
-                  {collection.title}
-                </p>
-                <p className="text-gray-400">{collection.description}</p>
-              </div>
-            </button>
-          ))
-        : "коллекций не найдено"}
+        <div className="mb-head">
+          <h3>Выбор коллекции</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" onScroll={handleScroll} ref={modalRef}>
+          {content && content.length > 0 ?
+            content.map((collection: any) => (
+              <button
+                type="button"
+                className="row"
+                key={`collection_${collection.id}`}
+                onClick={() => _addToCollection(collection)}
+                style={{ width: "100%", textAlign: "left" }}
+              >
+                <span className="row-poster">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={collection.image} alt="" />
+                </span>
+                <span className="row-body">
+                  <span className="row-title">{collection.title}</span>
+                  {collection.description && (
+                    <span className="row-sub">{collection.description}</span>
+                  )}
+                </span>
+                <span className="row-right">
+                  <Icon name="plus" size={16} />
+                </span>
+              </button>
+            ))
+          : <p className="muted small">
+              {isLoading ? "Загружаем коллекции..." : "коллекций не найдено"}
+            </p>
+          }
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 };

@@ -1,5 +1,3 @@
-import { Button, Card, Modal, ModalHeader, Rating, RatingStar } from "flowbite-react";
-
 import { unixToDate, useSWRfetcher } from "#/api/utils";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -7,39 +5,61 @@ import { ENDPOINTS } from "#/api/config";
 import useSWRInfinite from "swr/infinite";
 import { Spinner } from "../Spinner/Spinner";
 import { Poster } from "../ReleasePoster/Poster";
+import { Icon } from "#/components/Icon/Icon";
+
+const Stars = (props: { value: number }) => {
+  return (
+    <span className="stars-row" aria-label={`Оценка ${props.value} из 5`}>
+      {[1, 2, 3, 4, 5].map((index) => (
+        <Icon
+          key={`star-${index}`}
+          name="star"
+          size={14}
+          fill={props.value >= index}
+          className={props.value >= index ? "on" : ""}
+        />
+      ))}
+    </span>
+  );
+};
 
 export const ProfileReleaseRatings = (props: any) => {
   const [modal, setModal] = useState(false);
   return (
-    <Card className="h-fit">
-      <div className="flex justify-between">
-        <h1 className="text-2xl font-bold">Оценки</h1>
-        <Button color={"light"} onClick={() => setModal(true)} size={"xs"}>
+    <div className="box">
+      <div className="sh" style={{ marginBottom: 12 }}>
+        <h2>
+          <Icon name="star" size={18} />
+          Оценки
+        </h2>
+        <button
+          type="button"
+          className="btn g"
+          style={{ padding: "5px 10px", fontSize: 12 }}
+          onClick={() => setModal(true)}
+        >
           Посмотреть все
-        </Button>
+        </button>
       </div>
-      <div className="flex flex-col w-full gap-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {props.ratings.map((release) => {
           return (
-            <Link href={`/release/${release.id}`} key={`vote-${release.id}`}>
-              <div className="flex gap-2">
-                <div className="max-w-32">
-                  <Poster image={release.image} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h2 className="text-lg font-bold dark:text-white">{release.title_ru}</h2>
-                  <Rating size="md">
-                    <RatingStar filled={release.my_vote >= 1} />
-                    <RatingStar filled={release.my_vote >= 2} />
-                    <RatingStar filled={release.my_vote >= 3} />
-                    <RatingStar filled={release.my_vote >= 4} />
-                    <RatingStar filled={release.my_vote >= 5} />
-                  </Rating>
-                  <h2 className="text-gray-500 text-md dark:text-gray-400">
-                    {unixToDate(release.voted_at, "full")}
-                  </h2>
-                </div>
-              </div>
+            <Link
+              href={`/release/${release.id}`}
+              key={`vote-${release.id}`}
+              className="row"
+              style={{ marginBottom: 0 }}
+            >
+              <span className="row-poster">
+                <Poster image={release.image} />
+              </span>
+              <span className="row-body">
+                <span className="row-title">{release.title_ru}</span>
+                <Stars value={release.my_vote} />
+                <span className="row-sub">
+                  {unixToDate(release.voted_at, "full")}
+                </span>
+              </span>
             </Link>
           );
         })}
@@ -50,7 +70,7 @@ export const ProfileReleaseRatings = (props: any) => {
         isOpen={modal}
         setIsOpen={setModal}
       />
-    </Card>
+    </div>
   );
 };
 
@@ -106,63 +126,65 @@ const ProfileReleaseRatingsModal = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollPosition]);
 
+  if (!props.isOpen) return <></>;
+
   return (
-    <Modal
-      dismissible
-      show={props.isOpen}
-      onClose={() => props.setIsOpen(false)}
-      size={"4xl"}
-    >
-      <ModalHeader>Оценки</ModalHeader>
+    <div className="md" onClick={() => props.setIsOpen(false)}>
       <div
-        className="flex flex-col gap-2 p-4 overflow-y-auto"
-        onScroll={handleScroll}
-        ref={modalRef}
+        className="mb"
+        onClick={(event) => event.stopPropagation()}
+        style={{ width: "min(760px, 100%)" }}
       >
-        {isLoading && <Spinner />}
-        {content && content.length > 0 ?
-          content.map((release) => {
-            return (
-              <Link
-                href={`/release/${release.id}`}
-                key={`vote-modal-${release.id}`}
-              >
-                <div className="flex gap-4 xl:mx-20">
-                  <div className="flex-shrink-0 max-w-32">
+        <div className="mb-head">
+          <h3>Оценки</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" onScroll={handleScroll} ref={modalRef}>
+          {isLoading && (
+            <div className="empty" style={{ marginBottom: 0 }}>
+              <Spinner />
+            </div>
+          )}
+          {content && content.length > 0 ?
+            content.map((release) => {
+              return (
+                <Link
+                  href={`/release/${release.id}`}
+                  key={`vote-modal-${release.id}`}
+                  className="row"
+                  style={{ marginBottom: 0 }}
+                >
+                  <span className="row-poster">
                     <Poster image={release.image} />
-                  </div>
-                  <div className="flex flex-col gap-1 py-2">
-                    <h2 className="text-lg">{release.title_ru}</h2>
-                    <div className="flex items-center gap-1">
-                      <p className="text-md">
-                        {release.episodes_total ? release.episodes_total : "?"}{" "}
-                        эп.
-                      </p>
-                      <span className="mx-1.5 h-1 w-1 rounded-full bg-gray-500 dark:bg-gray-400 hidden lg:block" />
-                      <p className="text-md">
-                        <Rating size="xs">
-                          <RatingStar filled={true} />{" "}
-                          {release.grade ? release.grade.toFixed(1) : "?"} из 5
-                        </Rating>
-                      </p>
-                    </div>
-                    <Rating size="md">
-                      <RatingStar filled={release.my_vote >= 1} />
-                      <RatingStar filled={release.my_vote >= 2} />
-                      <RatingStar filled={release.my_vote >= 3} />
-                      <RatingStar filled={release.my_vote >= 4} />
-                      <RatingStar filled={release.my_vote >= 5} />
-                    </Rating>
-                    <h2 className="text-gray-500 text-md dark:text-gray-400">
+                  </span>
+                  <span className="row-body">
+                    <span className="row-title">{release.title_ru}</span>
+                    <span className="row-sub">
+                      {release.episodes_total ? release.episodes_total : "?"}{" "}
+                      эп.
+                      {" · "}
+                      <Icon name="star" size={12} fill />
+                      {release.grade ? release.grade.toFixed(1) : "?"} из 5
+                    </span>
+                    <Stars value={release.my_vote} />
+                    <span className="row-sub">
                       {unixToDate(release.voted_at, "full")}
-                    </h2>
-                  </div>
-                </div>
-              </Link>
-            );
-          })
-        : <h1>Оценок нет</h1>}
+                    </span>
+                  </span>
+                </Link>
+              );
+            })
+          : !isLoading && <p className="muted small">Оценок нет</p>}
+        </div>
       </div>
-    </Modal>
+    </div>
   );
 };

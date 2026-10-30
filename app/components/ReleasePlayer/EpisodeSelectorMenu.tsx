@@ -7,6 +7,7 @@ import { _fetchAPI } from "./PlayerParsing";
 import { Voiceover } from "./VoiceoverSelectorMenu";
 import { Source } from "./SourceSelectorMenu";
 import { getAnonEpisodesWatched } from "./ReleasePlayer";
+import { Icon } from "#/components/Icon/Icon";
 
 export interface Episode {
   position: number;
@@ -119,8 +120,13 @@ export const EpisodeSelectorMenu = ({
                       epis.position.toString()
                     )
                   ) ?
-                    <span className="w-4 h-4 ml-2 iconify material-symbols--check-circle"></span>
-                  : <span className="w-4 h-4 ml-2 iconify material-symbols--check-circle-outline"></span>
+                    <Icon name="check" size={16} className="ml-2" />
+                  : <Icon
+                      name="check"
+                      size={16}
+                      className="ml-2"
+                      style={{ opacity: 0.4 }}
+                    />
                   }
                 </div>
               </button>

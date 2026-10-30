@@ -1,14 +1,22 @@
-import { Card } from "flowbite-react";
 import Link from "next/link";
 import ApexCharts from "apexcharts";
 import { useEffect } from "react";
 import { minutesToTime } from "#/api/utils";
 import { ReleaseInfoSearchLink } from "../ReleaseInfo/ReleaseInfo.SearchLink";
+import { Icon } from "#/components/Icon/Icon";
 
 type preferredItem = {
   name: string;
   percentage: number;
 };
+
+const LISTS = [
+  { name: "Смотрю", color: "#66bb6c" },
+  { name: "В планах", color: "#b566bb" },
+  { name: "Просмотрено", color: "#5c6cc0" },
+  { name: "Отложено", color: "#ffca28" },
+  { name: "Брошено", color: "#ef5450" },
+];
 
 export const ProfileStats = (props: {
   lists: Array<number>;
@@ -24,8 +32,8 @@ export const ProfileStats = (props: {
       series: props.lists,
       colors: ["#66bb6c", "#b566bb", "#5c6cc0", "#ffca28", "#ef5450"],
       chart: {
-        height: 240,
-        width: "100%",
+        height: 200,
+        width: 200,
         type: "donut",
       },
       stroke: {
@@ -77,108 +85,96 @@ export const ProfileStats = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const total = props.lists.reduce((sum, value) => sum + (value || 0), 0);
+
   return (
-    <Card className="font-light h-fit">
-      <div className="flex justify-between">
-        <h1 className="text-2xl font-bold">Статистика</h1>
+    <div className="box">
+      <div className="sh" style={{ marginBottom: 12 }}>
+        <h2>
+          <Icon name="trend" size={18} />
+          Статистика
+        </h2>
         <Link href={`/profile/${props.profile_id}/bookmarks`}>
-          <div className="flex items-center">
-            <p className="hidden text-xl font-bold sm:block">Показать все</p>
-            <span className="w-6 h-6 iconify mdi--arrow-right"></span>
-          </div>
+          Показать все
+          <Icon name="arrowRight" size={16} />
         </Link>
       </div>
-      <div className="flex items-center">
-        <div>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-y-2 gap-x-4">
-            <p className="align-center whitespace-nowrap">
-              <span className="inline-block rounded w-4 h-4 bg-[#66bb6c]"></span>{" "}
-              Смотрю <span className="font-bold">{props.lists[0]}</span>
-            </p>
-            <p className="align-center whitespace-nowrap">
-              <span className="inline-block rounded w-4 h-4 bg-[#b566bb]"></span>{" "}
-              В планах <span className="font-bold">{props.lists[1]}</span>
-            </p>
-            <p className="align-center whitespace-nowrap">
-              <span className="inline-block rounded w-4 h-4 bg-[#5c6cc0]"></span>{" "}
-              Просмотрено <span className="font-bold">{props.lists[2]}</span>
-            </p>
-            <p className="align-center whitespace-nowrap">
-              <span className="inline-block rounded w-4 h-4 bg-[#ffca28]"></span>{" "}
-              Отложено <span className="font-bold">{props.lists[3]}</span>
-            </p>
-            <p className="align-center whitespace-nowrap">
-              <span className="inline-block rounded w-4 h-4 bg-[#ef5450]"></span>{" "}
-              Брошено <span className="font-bold">{props.lists[4]}</span>
-            </p>
-          </div>
-          <div className="mt-4">
-            <p>
-              Жанры:{" "}
-              <span>
-                {props.preferred_genres.map((item, index) => {
-                  return (
-                    <span key={`preferred-genres-${item.name}`} className="inline">
-                      {index > 0 && ", "}
-                      <ReleaseInfoSearchLink
-                        title={item.name}
-                        searchBy={"tag"}
-                      />{" "}
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{item.percentage}%</span>
-                    </span>
-                  );
-                })}
-              </span>
-            </p>
-            <p>
-              Аудитория:{" "}
-              <span>
-                {props.preferred_audiences.map((item, index) => {
-                  return (
-                    <span key={`preferred-audiences-${item.name}`} className="inline">
-                      {index > 0 && ", "}
-                      <ReleaseInfoSearchLink
-                        title={item.name}
-                        searchBy={"tag"}
-                      />{" "}
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{item.percentage}%</span>
-                    </span>
-                  );
-                })}
-              </span>
-            </p>
-            <p>
-              Тематика:{" "}
-              <span>
-                {props.preferred_themes.map((item, index) => {
-                  return (
-                    <span key={`preferred-themes-${item.name}`} className="inline">
-                      {index > 0 && ", "}
-                      <ReleaseInfoSearchLink
-                        title={item.name}
-                        searchBy={"tag"}
-                      />{" "}
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{item.percentage}%</span>
-                    </span>
-                  );
-                })}
-              </span>
-            </p>
 
-            <p>
-              Просмотрено серий:{" "}
-              <span className="font-bold">{props.watched_count}</span>
-            </p>
-            <p>
-              Время просмотра:{" "}
-              <span className="font-bold">
-                ~{minutesToTime(props.watched_time)}
+      <div className="stat-donut">
+        <div id="donut-chart"></div>
+        <div className="legend">
+          {LISTS.map((item, index) => (
+            <div className="legend-row" key={`list-${item.name}`}>
+              <i className="legend-dot" style={{ background: item.color }} />
+              {item.name}
+              <span className="legend-n">{props.lists[index] || 0}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="statgrid" style={{ marginTop: 14 }}>
+        <div className="statcard">
+          <div className="statcard-k">Всего тайтлов</div>
+          <div className="statcard-v">{total}</div>
+        </div>
+        <div className="statcard">
+          <div className="statcard-k">Просмотрено серий</div>
+          <div className="statcard-v">{props.watched_count}</div>
+        </div>
+        <div className="statcard">
+          <div className="statcard-k">Время просмотра</div>
+          <div className="statcard-v">~{minutesToTime(props.watched_time)}</div>
+        </div>
+      </div>
+
+      {props.preferred_genres.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div className="infocell-k" style={{ marginBottom: 6 }}>
+            Любимые жанры
+          </div>
+          <div className="chiprow">
+            {props.preferred_genres.map((item) => (
+              <span className="chip" key={`preferred-genres-${item.name}`}>
+                <ReleaseInfoSearchLink title={item.name} searchBy={"tag"} />
+                <span className="muted small">{item.percentage}%</span>
               </span>
-            </p>
+            ))}
           </div>
         </div>
-        <div id="donut-chart"></div>
-      </div>
-    </Card>
+      )}
+
+      {props.preferred_audiences.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div className="infocell-k" style={{ marginBottom: 6 }}>
+            Аудитория
+          </div>
+          <div className="chiprow">
+            {props.preferred_audiences.map((item) => (
+              <span className="chip" key={`preferred-audiences-${item.name}`}>
+                <ReleaseInfoSearchLink title={item.name} searchBy={"tag"} />
+                <span className="muted small">{item.percentage}%</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {props.preferred_themes.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div className="infocell-k" style={{ marginBottom: 6 }}>
+            Тематика
+          </div>
+          <div className="chiprow">
+            {props.preferred_themes.map((item) => (
+              <span className="chip" key={`preferred-themes-${item.name}`}>
+                <ReleaseInfoSearchLink title={item.name} searchBy={"tag"} />
+                <span className="muted small">{item.percentage}%</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };

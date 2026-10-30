@@ -1,17 +1,8 @@
 "use client";
 
 import { FilterGenre } from "#/api/utils";
-import {
-  Button,
-  Checkbox,
-  Label,
-  Modal,
-  ModalBody,
-  ModalFooter,
-  ModalHeader,
-  ToggleSwitch,
-} from "flowbite-react";
 import { useEffect, useState } from "react";
+import { Icon } from "#/components/Icon/Icon";
 
 type Props = {
   isOpen: boolean;
@@ -48,94 +39,123 @@ export const FiltersGenreModal = ({
     setNewExclusionMode(exclusionMode);
   }, [genres, exclusionMode]);
 
+  if (!isOpen) return null;
+
   return (
-    <Modal show={isOpen} onClose={() => setIsOpen(false)} dismissible size="6xl">
-      <ModalHeader>Жанры</ModalHeader>
-      <ModalBody>
-        <div>
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
+    >
+      <div className="mb" style={{ width: "min(760px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Жанры</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+
+        <div className="mb-list" style={{ maxHeight: "58vh" }}>
           {Object.entries(FilterGenre).map(([key, value]) => {
             return (
-              <div key={`filter-genre-category-${value.name}`} className="mb-4">
-                <p className="mb-2">{value.name}</p>
-                {value.genres.map((genre) => {
-                  return (
-                    <div
-                      className="flex items-center gap-2"
-                      key={`filter-genre-category-${value.name}-${genre}`}
-                    >
-                      <Checkbox
-                        id={`filter-genre-category-${value.name}-genre-${genre}`}
-                        onChange={() => toggleGenre(genre)}
-                        checked={newGenres.includes(genre)}
-                        color="blue"
-                      />
-                      <Label
-                        htmlFor={`filter-genre-category-${value.name}-genre-${genre}`}
+              <div
+                key={`filter-genre-category-${value.name}`}
+                className="filter-group"
+              >
+                <p className="filter-group-title">{value.name}</p>
+                <div className="check-grid">
+                  {value.genres.map((genre) => {
+                    return (
+                      <label
+                        className="check"
+                        key={`filter-genre-category-${value.name}-${genre}`}
                       >
-                        {genre}
-                      </Label>
-                    </div>
-                  );
-                })}
+                        <input
+                          type="checkbox"
+                          onChange={() => toggleGenre(genre)}
+                          checked={newGenres.includes(genre)}
+                        />
+                        <span>{genre}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
         </div>
-      </ModalBody>
-      <ModalFooter>
-        <div className="flex justify-between w-full">
-          <div className="flex items-center gap-2">
-            <div>
-              <p className="mb-1 font-bold">Режим исключения</p>
-              <p className="text-sm text-gray-400 dark:text-gray-300 max-w-52">
-                Фильтр будет искать релизы не содержащие ни один из указанных
-                выше жанров
-              </p>
-            </div>
-            <ToggleSwitch
-              color="blue"
-              onChange={() => setNewExclusionMode(!newExclusionMode)}
+
+        <div className="filter-switch">
+          <div>
+            <p className="filter-pick-title">Режим исключения</p>
+            <p className="hint">
+              Фильтр будет искать релизы не содержащие ни один из указанных
+              выше жанров
+            </p>
+          </div>
+          <label className="check" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
               checked={newExclusionMode}
+              onChange={() => setNewExclusionMode(!newExclusionMode)}
             />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => {
-                save([], false);
-                setNewGenres([]);
-                setNewExclusionMode(false);
-                setIsOpen(false);
-              }}
-              color="red"
-            >
-              Сбросить
-            </Button>
-            <Button
-              onClick={() => {
-                save(newGenres, newExclusionMode);
-                setNewGenres([]);
-                setNewExclusionMode(false);
-                setIsOpen(false);
-              }}
-              color="blue"
-            >
-              Применить
-            </Button>
-            <Button
-              onClick={() => {
-                if (newGenres.length != genresLength) {
-                  setNewGenres(Object.entries(FilterGenre).map(([key, value]) => value.genres.map((genre) => genre)).flat());
-                } else {
-                  setNewGenres([]);
-                }
-              }}
-              color="light"
-            >
-              {newGenres.length >= genresLength ? "Снять все" : "Выбрать все"}
-            </Button>
-          </div>
+            <span>Включён</span>
+          </label>
         </div>
-      </ModalFooter>
-    </Modal>
+
+        <div className="mb-foot">
+          <button
+            type="button"
+            className="btn danger"
+            onClick={() => {
+              save([], false);
+              setNewGenres([]);
+              setNewExclusionMode(false);
+              setIsOpen(false);
+            }}
+          >
+            Сбросить
+          </button>
+          <button
+            type="button"
+            className="btn g"
+            onClick={() => {
+              if (newGenres.length != genresLength) {
+                setNewGenres(
+                  Object.entries(FilterGenre)
+                    .map(([key, value]) => value.genres.map((genre) => genre))
+                    .flat()
+                );
+              } else {
+                setNewGenres([]);
+              }
+            }}
+          >
+            {newGenres.length >= genresLength ? "Снять все" : "Выбрать все"}
+          </button>
+          <button
+            type="button"
+            className="btn p"
+            onClick={() => {
+              save(newGenres, newExclusionMode);
+              setNewGenres([]);
+              setNewExclusionMode(false);
+              setIsOpen(false);
+            }}
+          >
+            <Icon name="check" size={16} />
+            Применить
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };

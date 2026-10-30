@@ -1,7 +1,6 @@
 "use client";
 
 import Styles from "./MediaPlayer.module.css";
-import { Button, Card } from "flowbite-react";
 import { useEffect, useState } from "react";
 import {
   MediaController,
@@ -327,7 +326,7 @@ export const ReleasePlayerCustom = (props: {
   }
 
   return (
-    <Card className="">
+    <div className="player-frame">
       <div className="flex items-center justify-center w-full h-full">
         <MediaController
           breakpoints="md:480"
@@ -385,25 +384,25 @@ export const ReleasePlayerCustom = (props: {
               <div slot="centered-chrome" className="flex flex-col gap-4 z-[2]">
                 <p className="text-lg font-bold">{playerError.message}</p>
                 {!isErrorDetailsOpen ?
-                  <Button
-                    color="light"
-                    size="xs"
+                  <button
+                    type="button"
+                    className="btn g sm"
                     onClick={() => setIsErrorDetailsOpen(true)}
                   >
                     Подробнее
-                  </Button>
+                  </button>
                 : <p className="font-light text-gray-100">
                     {playerError.detail}
                   </p>
                 }
                 {voiceover.selected && source.selected && episode.selected ?
-                  <Button
-                    color="light"
-                    size="xs"
+                  <button
+                    type="button"
+                    className="btn g sm"
                     onClick={() => setRetryCount(retryCount + 1)}
                   >
                     Повторить
-                  </Button>
+                  </button>
                 : ""}
               </div>
             </>
@@ -508,9 +507,12 @@ export const ReleasePlayerCustom = (props: {
               onClick={() => _prevEpisode()}
             >
               <div slot="tooltip-content">Предыдущая серия</div>
-              <span
-                className={`${Styles["svg"]} iconify solar--skip-previous-outline w-[calc(0.9*var(--base))] h-[calc(0.9*var(--base))]`}
-              ></span>
+              <svg
+                viewBox="0 0 24 24"
+                className={`${Styles["svg"]} w-[calc(0.9*var(--base))] h-[calc(0.9*var(--base))]`}
+              >
+                <path d="M19 5v14M15 12 6 6v12l9-6Z" />
+              </svg>
             </MediaChromeButton>
             <MediaPlayButton
               mediaPaused={true}
@@ -561,9 +563,12 @@ export const ReleasePlayerCustom = (props: {
               onClick={() => _nextEpisode()}
             >
               <div slot="tooltip-content">Следующая серия</div>
-              <span
-                className={`${Styles["svg"]} iconify solar--skip-next-outline w-[calc(0.9*var(--base))] h-[calc(0.9*var(--base))]`}
-              ></span>
+              <svg
+                viewBox="0 0 24 24"
+                className={`${Styles["svg"]} w-[calc(0.9*var(--base))] h-[calc(0.9*var(--base))]`}
+              >
+                <path d="M5 5v14M9 12l9-6v12l-9-6Z" />
+              </svg>
             </MediaChromeButton>
             <MediaMuteButton
               className={`${Styles["media-button"]} ${Styles["media-mute-button"]}`}
@@ -866,6 +871,6 @@ export const ReleasePlayerCustom = (props: {
           </MediaControlBar>
         </MediaController>
       </div>
-    </Card>
+    </div>
   );
 };

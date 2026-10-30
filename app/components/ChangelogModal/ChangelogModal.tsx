@@ -1,9 +1,9 @@
 "use client";
 
-import { Modal, ModalBody, ModalHeader } from "flowbite-react";
 import { useEffect, useState } from "react";
 import { tryCatch } from "#/api/utils";
 import { ChangelogAccordion, ChangelogMarkdown } from "./Changelog";
+import { Icon } from "#/components/Icon/Icon";
 
 export const ChangelogModal = (props: {
   isOpen: boolean;
@@ -66,18 +66,35 @@ export const ChangelogModal = (props: {
     }
   }
 
+  if (!props.isOpen) return null;
+
   return (
-    <Modal show={props.isOpen} onClose={() => props.setIsOpen(false)}>
-      <ModalHeader>
-        Список изменений v{props.versionResponse.version}
-      </ModalHeader>
-      <ModalBody>
+    <div
+      className="md"
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) props.setIsOpen(false);
+      }}
+    >
+      <div className="mb" style={{ width: "min(720px, 100%)" }}>
+        <div className="mb-head">
+          <h3>Список изменений v{props.versionResponse.version}</h3>
+          <button
+            type="button"
+            className="mb-close"
+            onClick={() => props.setIsOpen(false)}
+            aria-label="Закрыть"
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
         <ChangelogMarkdown content={currentVersionChangelog} />
         <ChangelogAccordion
           callback={(value) => accordionCallback(value)}
           contents={previousVersionsChangelog}
         />
-      </ModalBody>
-    </Modal>
+      </div>
+    </div>
   );
 };

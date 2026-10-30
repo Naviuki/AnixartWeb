@@ -1,14 +1,14 @@
 "use client";
 
-import { Card } from "flowbite-react";
 import { ReleaseLinkList } from "#/components/ReleaseLink/ReleaseLinkList";
+import { ReleaseCourusel } from "#/components/ReleaseCourusel/ReleaseCourusel";
 import { useUserStore } from "#/store/auth";
 import { ENDPOINTS } from "#/api/config";
 import { BookmarksList, useSWRfetcher } from "#/api/utils";
 import useSWR from "swr";
 import { useEffect, useState } from "react";
 
-export const ContinueWatching = () => {
+export const ContinueWatching = (props: { variant?: "box" | "rail" }) => {
   const userStore = useUserStore();
 
   function useFetchReleases(listName: string) {
@@ -47,9 +47,9 @@ export const ContinueWatching = () => {
   useEffect(() => {
     if (!watchingLoading && !plannedLoading && !delayedLoading) {
       const data = [
-        ...(watchingData.content || []),
-        ...(plannedData.content || []),
-        ...(delayedData.content || []),
+        ...(watchingData?.content || []),
+        ...(plannedData?.content || []),
+        ...(delayedData?.content || []),
       ];
       const randomizedData = _randomize(data, 3);
       setReleaseData(randomizedData);
@@ -66,12 +66,22 @@ export const ContinueWatching = () => {
   )
     return <></>;
 
+  if (props.variant === "rail") {
+    return (
+      <ReleaseCourusel
+        sectionTitle="Продолжить смотреть"
+        showAllLink="/history"
+        content={releaseData}
+      />
+    );
+  }
+
   return (
-    <Card>
-      <div className="flex justify-between py-2 border-b-2 border-black dark:border-white">
-        <h1>Продолжить просмотр</h1>
+    <section className="sec">
+      <div className="sh">
+        <h2>Продолжить просмотр</h2>
       </div>
-      <div className="flex flex-col gap-4 mt-2">
+      <div className="box" style={{ marginBottom: 0 }}>
         {releaseData.map((release: any) => {
           return (
             <ReleaseLinkList
@@ -82,6 +92,6 @@ export const ContinueWatching = () => {
           );
         })}
       </div>
-    </Card>
+    </section>
   );
 };
