@@ -53,6 +53,24 @@ AniX - это неофициальный веб-клиент для Android-пр
 
 </details>
 
+## Готовый Docker-образ (GitHub Container Registry)
+
+Образ собирается автоматически при каждом пуше в ветку `V3` и публикуется в GHCR:
+
+```bash
+docker run -d --restart always --name anix -p 3000:3000 ghcr.io/naviuki/anixartweb:latest
+```
+
+- теги: `latest` и `<версия>-<дата>`, например `3.10.3-31-10-2026`
+- исходники workflow: [`.github/workflows/publish-ghcr.yml`](./.github/workflows/publish-ghcr.yml)
+- подробнее: [[RU] РАЗВЁРТЫВАНИЕ](./DEPLOYMENT.RU.md#github-container-registry)
+
+> [!NOTE]
+> GitHub Pages для этого клиента не подходит: он умеет отдавать только статические
+> файлы, а приложению нужен сервер (динамические маршруты `/release/[id]`,
+> `/profile/[id]`, middleware-прокси `/api/proxy/*`). Для живого адреса используйте
+> Vercel, Netlify, Docker или локальный запуск.
+
 ## Публичные демо
 
 > [!WARNING]

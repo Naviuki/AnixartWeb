@@ -53,6 +53,23 @@ Please note that AniX is an unofficial project and is not affiliated with the de
 
 </details>
 
+## Ready-made Docker image (GitHub Container Registry)
+
+The image is rebuilt and published to GHCR on every push to the `V3` branch:
+
+```bash
+docker run -d --restart always --name anix -p 3000:3000 ghcr.io/naviuki/anixartweb:latest
+```
+
+- tags: `latest` and `<version>-<date>`, e.g. `3.10.3-31-10-2026`
+- workflow source: [`.github/workflows/publish-ghcr.yml`](./.github/workflows/publish-ghcr.yml)
+- details: [DEPLOY](./DEPLOYMENT.md#github-container-registry)
+
+> [!NOTE]
+> GitHub Pages cannot host this client: it only serves static files, while the app
+> needs a server (dynamic routes `/release/[id]`, `/profile/[id]`, the `/api/proxy/*`
+> middleware). For a live URL use Vercel, Netlify, Docker or local hosting.
+
 ## Public demo
 
 > [!WARNING]
