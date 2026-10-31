@@ -27,6 +27,8 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image name
+        run: echo "IMAGE_NAME=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/anixartweb" >> $GITHUB_ENV
       - name: Build and push image
         uses: docker/build-push-action@v5
         with:
@@ -34,5 +36,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/anixartweb:latest
-            ghcr.io/${{ github.repository_owner }}/anixartweb:${{ env.APP_VERSION }}-${{ env.IMAGE_DATE }}
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-${{ env.IMAGE_DATE }}
