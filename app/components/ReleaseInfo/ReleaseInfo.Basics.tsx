@@ -45,7 +45,7 @@ export const ReleaseInfoBasics = (props: {
 
           {props.note && (
             <div className="rhero-note">
-              <div id="note"></div>
+              <p>{props.note}</p>
             </div>
           )}
 

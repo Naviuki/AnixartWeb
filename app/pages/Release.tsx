@@ -43,21 +43,19 @@ export const ReleasePage = (props: any) => {
   }
   const [data, isLoading, error] = useFetch(props.id);
 
-  // <style> из note отбрасывается: браузер перекрашивал им подложку,
-  // и текст сливался с фоном
-  useEffect(() => {
-    if (!data) return;
-    const el = document.getElementById("note");
-    if (!el) return;
-
-    const html = typeof data.release.note === "string" ? data.release.note : "";
-    const template = document.createElement("template");
-    template.innerHTML = html;
-    template.content
-      .querySelectorAll("style, script, link, iframe")
-      .forEach((node) => node.remove());
-    el.replaceChildren(...Array.from(template.content.childNodes));
-  }, [data]);
+  // Через <style> из note браузер перекрашивал подложку, и текст сливался
+  // с фоном. Оставляем только текст, разметку не вставляем.
+  const noteText =
+    data && typeof data.release?.note === "string" ?
+      data.release.note
+        .replace(/<[^>]*>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
 
   useEffect(() => {
     if (data) {
@@ -113,7 +111,7 @@ export const ReleasePage = (props: any) => {
           original: data.release.title_original,
         }}
         description={data.release.description}
-        note={data.release.note}
+        note={noteText}
         release_id={data.release.id}
       >
         <ReleaseInfoUserList
