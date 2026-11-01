@@ -43,12 +43,24 @@ export const ReleasePage = (props: any) => {
   }
   const [data, isLoading, error] = useFetch(props.id);
 
+  // <style> из note отбрасывается: браузер перекрашивал им подложку,
+  // и текст сливался с фоном
+  useEffect(() => {
+    if (!data) return;
+    const el = document.getElementById("note");
+    if (!el) return;
+
+    const html = typeof data.release.note === "string" ? data.release.note : "";
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    template.content
+      .querySelectorAll("style, script, link, iframe")
+      .forEach((node) => node.remove());
+    el.replaceChildren(...Array.from(template.content.childNodes));
+  }, [data]);
+
   useEffect(() => {
     if (data) {
-      const el = document.getElementById("note");
-      if (el) {
-        el.innerHTML = data.release.note;
-      }
       setUserList(data.release.profile_list_status || 0);
       setUserFavorite(data.release.is_favorite);
     }

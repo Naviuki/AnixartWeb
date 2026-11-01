@@ -1913,7 +1913,7 @@ body[data-card="list"] .railrow {
   border: none;
   cursor: pointer;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  background: color-mix(in srgb, var(--s2) 94%, var(--t1));
   backdrop-filter: blur(8px);
   color: var(--t1);
   display: flex;
