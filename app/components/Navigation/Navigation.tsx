@@ -73,6 +73,7 @@ const ALL_PAGES = [
   { icon: "plus", title: "Новая коллекция", href: "/collections/create" },
   { icon: "history", title: "История", href: "/history" },
   { icon: "user", title: "Профиль", href: "/profile" },
+  { icon: "bell", title: "Уведомления", href: "/notifications" },
   { icon: "login", title: "Вход", href: "/login" },
   { icon: "info", title: "О приложении", href: "/about" },
 ];

@@ -12,6 +12,7 @@ import { AppearanceProvider } from "./components/Appearance/AppearanceProvider";
 import { AppearancePanel } from "./components/Appearance/AppearancePanel";
 import { Navigation } from "./components/Navigation/Navigation";
 import { Icon } from "./components/Icon/Icon";
+import { NotificationsBridge } from "./components/Notifications/NotificationsBridge";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -77,6 +78,7 @@ export const App = (props) => {
   return (
     <body className={inter.className}>
       <AppearanceProvider>
+        <NotificationsBridge />
         <div className="app">
           <Navigation
             setIsSettingModalOpen={setIsSettingModalOpen}

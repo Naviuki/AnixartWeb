@@ -8,7 +8,7 @@ import { useUserStore } from "#/store/auth";
 import { useEffect, useState } from "react";
 
 import { ReleaseInfoBasics } from "#/components/ReleaseInfo/ReleaseInfo.Basics";
-import { ReleaseInfoInfo } from "#/components/ReleaseInfo/ReleaseInfo.Info";
+import { SeasonBell } from "#/components/Notifications/SeasonBell";import { ReleaseInfoInfo } from "#/components/ReleaseInfo/ReleaseInfo.Info";
 import { ReleasePlayer } from "#/components/ReleasePlayer/ReleasePlayer";
 import { ReleasePlayerCustom } from "#/components/ReleasePlayer/ReleasePlayerCustom";
 import { ReleaseInfoUserList } from "#/components/ReleaseInfo/ReleaseInfo.UserList";
@@ -113,6 +113,10 @@ export const ReleasePage = (props: any) => {
           setUserList={setUserList}
           setIsFavorite={setUserFavorite}
           collection_count={data.release.collection_count}
+        />
+        <SeasonBell
+          releaseId={data.release.id}
+          title={data.release.title_ru}
         />
       </ReleaseInfoBasics>
 

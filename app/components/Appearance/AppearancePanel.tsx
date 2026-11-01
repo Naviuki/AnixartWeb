@@ -1,8 +1,10 @@
 "use client";
+
+// Панель вида содержит только контролы, поэтому её используют и во вкладке настроек
 import { DEFAULT_APPEARANCE, usePreferencesStore } from "#/store/preferences";
 import { Icon } from "#/components/Icon/Icon";
 
-const ACCENTS = [
+export const ACCENTS = [
   "#5b6cff",
   "#9d5cff",
   "#ff4d8d",
@@ -30,13 +32,14 @@ const THEMES: { id: "dark" | "light" | "amoled"; title: string }[] = [
   { id: "amoled", title: "AMOLED" },
 ];
 
-const SECTIONS: { id: "hero" | "cont" | "last" | "ong" | "col"; title: string }[] = [
-  { id: "hero", title: "Баннер" },
-  { id: "cont", title: "Продолжить" },
-  { id: "last", title: "Последние" },
-  { id: "ong", title: "Выходит" },
-  { id: "col", title: "Коллекции" },
-];
+const SECTIONS: { id: "hero" | "cont" | "last" | "ong" | "col"; title: string }[] =
+  [
+    { id: "hero", title: "Баннер" },
+    { id: "cont", title: "Продолжить" },
+    { id: "last", title: "Последние" },
+    { id: "ong", title: "Выходит" },
+    { id: "col", title: "Коллекции" },
+  ];
 
 const NAV_ITEMS: {
   id: "home" | "disc" | "search" | "book" | "fav" | "coll" | "hist";
@@ -51,10 +54,17 @@ const NAV_ITEMS: {
   { id: "hist", title: "История" },
 ];
 
-export const AppearancePanel = (props: {
-  isOpen: boolean;
-  setIsOpen: (value: boolean) => void;
-}) => {
+// HEX в нижнем регистре, иначе один и тот же цвет попадёт в список дважды
+function normalizeHex(value: string) {
+  const hex = value.trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(hex)) return hex;
+  if (/^#[0-9a-f]{3}$/.test(hex)) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+  }
+  return null;
+}
+
+export const AppearanceControls = (props: { compact?: boolean }) => {
   const appearance = usePreferencesStore((state) => state.appearance);
   const setAppearance = usePreferencesStore((state) => state.setAppearance);
 
@@ -63,6 +73,24 @@ export const AppearancePanel = (props: {
   };
   const setNav = (id: keyof typeof appearance.nav, value: number) => {
     setAppearance({ nav: { ...appearance.nav, [id]: value } });
+  };
+
+  const customAccents = appearance.customAccents || [];
+  // Свой цвет добавляется в список и сразу становится активным
+  const setCustomAccent = (color: string) => {
+    const hex = normalizeHex(color);
+    if (!hex) return;
+    const next = customAccents.includes(hex) ?
+      customAccents
+    : [hex, ...customAccents].slice(0, 12);
+    setAppearance({ acc: hex, customAccents: next });
+  };
+  const removeCustomAccent = (color: string) => {
+    const next = customAccents.filter((item) => item !== color);
+    setAppearance({
+      customAccents: next,
+      acc: appearance.acc === color ? ACCENTS[0] : appearance.acc,
+    });
   };
 
   // Фото уменьшаем до 256px, чтобы dataURL не переполнял localStorage
@@ -103,6 +131,248 @@ export const AppearancePanel = (props: {
   };
 
   return (
+    <div className={props.compact ? "ap-body compact" : "ap-body"}>
+      <div className="ap-group">
+        <div className="ap-title">Навигация</div>
+        <div className="seg">
+          {LAYOUTS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={appearance.layout === item.id ? "on" : ""}
+              aria-pressed={appearance.layout === item.id}
+              onClick={() => setAppearance({ layout: item.id })}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Карточки</div>
+        <div className="seg">
+          {CARDS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={appearance.card === item.id ? "on" : ""}
+              aria-pressed={appearance.card === item.id}
+              onClick={() => setAppearance({ card: item.id })}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Тема</div>
+        <div className="seg">
+          {THEMES.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={appearance.theme === item.id ? "on" : ""}
+              aria-pressed={appearance.theme === item.id}
+              onClick={() => setAppearance({ theme: item.id })}
+            >
+              {item.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Акцент</div>
+        <div className="acc-row">
+          {[...ACCENTS, ...customAccents].map((color) => (
+            <button
+              key={color}
+              type="button"
+              className={`acc-swatch ${
+                appearance.acc === color ? "on" : ""
+              } ${customAccents.includes(color) ? "own" : ""}`}
+              style={{ background: color }}
+              onClick={() => setAppearance({ acc: color })}
+              aria-label={
+                customAccents.includes(color) ?
+                  `Свой акцент ${color}`
+                : `Акцент ${color}`
+              }
+              aria-pressed={appearance.acc === color}
+            />
+          ))}
+        </div>
+        {customAccents.length > 0 && (
+          <p className="hint">
+            Цвета с точкой добавлены вами. Удалить можно в «Настройки → Внешний
+            вид».
+          </p>
+        )}
+
+        {customAccents.length > 0 && (
+          <>
+            <div className="ap-subtitle">Ваши цвета</div>
+            <div className="acc-row">
+              {customAccents.map((color) => (
+                <span key={color} className="acc-custom">
+                  <button
+                    type="button"
+                    className={`acc-swatch ${appearance.acc === color ? "on" : ""}`}
+                    style={{ background: color }}
+                    onClick={() => setAppearance({ acc: color })}
+                    aria-label={`Свой акцент ${color}`}
+                    aria-pressed={appearance.acc === color}
+                  />
+                  <button
+                    type="button"
+                    className="acc-del"
+                    onClick={() => removeCustomAccent(color)}
+                    aria-label={`Удалить цвет ${color}`}
+                  >
+                    <Icon name="x" size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+
+        <label className="acc-pick">
+          <input
+            type="color"
+            value={normalizeHex(appearance.acc) || ACCENTS[0]}
+            onChange={(event) => setCustomAccent(event.target.value)}
+            aria-label="Выбрать любой акцентный цвет"
+          />
+          <span>Выбрать свой цвет</span>
+        </label>
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Размеры</div>
+        <div className="ap-slider">
+          <label htmlFor="ap-r">Скругление</label>
+          <input
+            id="ap-r"
+            type="range"
+            min={0}
+            max={28}
+            value={appearance.r}
+            onChange={(event) =>
+              setAppearance({ r: Number(event.target.value) })
+            }
+          />
+          <b>{appearance.r} px</b>
+        </div>
+        <div className="ap-slider">
+          <label htmlFor="ap-w">Карточки</label>
+          <input
+            id="ap-w"
+            type="range"
+            min={120}
+            max={260}
+            value={appearance.w}
+            onChange={(event) =>
+              setAppearance({ w: Number(event.target.value) })
+            }
+          />
+          <b>{appearance.w} px</b>
+        </div>
+        <div className="ap-slider">
+          <label htmlFor="ap-g">Отступы</label>
+          <input
+            id="ap-g"
+            type="range"
+            min={4}
+            max={28}
+            value={appearance.g}
+            onChange={(event) =>
+              setAppearance({ g: Number(event.target.value) })
+            }
+          />
+          <b>{appearance.g} px</b>
+        </div>
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Секции главной</div>
+        {SECTIONS.map((item) => (
+          <label key={item.id} className="ap-check">
+            <input
+              type="checkbox"
+              checked={appearance.sec[item.id] === 1}
+              onChange={(event) =>
+                setSection(item.id, event.target.checked ? 1 : 0)
+              }
+            />
+            {item.title}
+          </label>
+        ))}
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Пункты меню</div>
+        {NAV_ITEMS.map((item) => (
+          <label key={item.id} className="ap-check">
+            <input
+              type="checkbox"
+              checked={appearance.nav[item.id] === 1}
+              onChange={(event) =>
+                setNav(item.id, event.target.checked ? 1 : 0)
+              }
+            />
+            {item.title}
+          </label>
+        ))}
+      </div>
+
+      <div className="ap-group">
+        <div className="ap-title">Фото профиля</div>
+        <div className="acc-row" style={{ alignItems: "center" }}>
+          <label className="btn" style={{ cursor: "pointer" }}>
+            <Icon name="photo" size={16} />
+            Загрузить
+            <input
+              type="file"
+              accept="image/*"
+              onChange={onPhotoChange}
+              style={{ display: "none" }}
+            />
+          </label>
+          {appearance.photo && (
+            <button
+              type="button"
+              className="btn g"
+              onClick={() => setAppearance({ photo: "" })}
+            >
+              Убрать
+            </button>
+          )}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="btn"
+        style={{ width: "100%" }}
+        onClick={() =>
+          setAppearance({ ...DEFAULT_APPEARANCE, customAccents })
+        }
+      >
+        <Icon name="history" size={16} />
+        Сбросить
+      </button>
+    </div>
+  );
+};
+
+export const AppearancePanel = (props: {
+  isOpen: boolean;
+  setIsOpen: (value: boolean) => void;
+}) => {
+  return (
     <>
       <div
         className={`ap-scrim ${props.isOpen ? "open" : ""}`}
@@ -124,185 +394,7 @@ export const AppearancePanel = (props: {
             <Icon name="x" size={16} />
           </button>
         </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Навигация</div>
-          <div className="seg">
-            {LAYOUTS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={appearance.layout === item.id ? "on" : ""}
-                onClick={() => setAppearance({ layout: item.id })}
-              >
-                {item.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Карточки</div>
-          <div className="seg">
-            {CARDS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={appearance.card === item.id ? "on" : ""}
-                onClick={() => setAppearance({ card: item.id })}
-              >
-                {item.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Тема</div>
-          <div className="seg">
-            {THEMES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={appearance.theme === item.id ? "on" : ""}
-                onClick={() => setAppearance({ theme: item.id })}
-              >
-                {item.title}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Акцент</div>
-          <div className="acc-row">
-            {ACCENTS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`acc-swatch ${
-                  appearance.acc === color ? "on" : ""
-                }`}
-                style={{ background: color }}
-                onClick={() => setAppearance({ acc: color })}
-                aria-label={`Акцент ${color}`}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Размеры</div>
-          <div className="ap-slider">
-            <label htmlFor="ap-r">Скругление</label>
-            <input
-              id="ap-r"
-              type="range"
-              min={0}
-              max={28}
-              value={appearance.r}
-              onChange={(event) =>
-                setAppearance({ r: Number(event.target.value) })
-              }
-            />
-            <b>{appearance.r} px</b>
-          </div>
-          <div className="ap-slider">
-            <label htmlFor="ap-w">Карточки</label>
-            <input
-              id="ap-w"
-              type="range"
-              min={120}
-              max={260}
-              value={appearance.w}
-              onChange={(event) =>
-                setAppearance({ w: Number(event.target.value) })
-              }
-            />
-            <b>{appearance.w} px</b>
-          </div>
-          <div className="ap-slider">
-            <label htmlFor="ap-g">Отступы</label>
-            <input
-              id="ap-g"
-              type="range"
-              min={4}
-              max={28}
-              value={appearance.g}
-              onChange={(event) =>
-                setAppearance({ g: Number(event.target.value) })
-              }
-            />
-            <b>{appearance.g} px</b>
-          </div>
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Секции главной</div>
-          {SECTIONS.map((item) => (
-            <label key={item.id} className="ap-check">
-              <input
-                type="checkbox"
-                checked={appearance.sec[item.id] === 1}
-                onChange={(event) =>
-                  setSection(item.id, event.target.checked ? 1 : 0)
-                }
-              />
-              {item.title}
-            </label>
-          ))}
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Пункты меню</div>
-          {NAV_ITEMS.map((item) => (
-            <label key={item.id} className="ap-check">
-              <input
-                type="checkbox"
-                checked={appearance.nav[item.id] === 1}
-                onChange={(event) =>
-                  setNav(item.id, event.target.checked ? 1 : 0)
-                }
-              />
-              {item.title}
-            </label>
-          ))}
-        </div>
-
-        <div className="ap-group">
-          <div className="ap-title">Фото профиля</div>
-          <div className="acc-row" style={{ alignItems: "center" }}>
-            <label className="btn" style={{ cursor: "pointer" }}>
-              <Icon name="photo" size={16} />
-              Загрузить
-              <input
-                type="file"
-                accept="image/*"
-                onChange={onPhotoChange}
-                style={{ display: "none" }}
-              />
-            </label>
-            {appearance.photo && (
-              <button
-                type="button"
-                className="btn g"
-                onClick={() => setAppearance({ photo: "" })}
-              >
-                Убрать
-              </button>
-            )}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="btn"
-          style={{ width: "100%" }}
-          onClick={() => setAppearance({ ...DEFAULT_APPEARANCE })}
-        >
-          <Icon name="history" size={16} />
-          Сбросить
-        </button>
+        <AppearanceControls />
       </aside>
     </>
   );

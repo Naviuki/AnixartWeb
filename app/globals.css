@@ -1083,8 +1083,8 @@ body[data-card="list"] .rcard-desc {
   .bell-label {
     display: none;
   }
-  .btn.bell.on {
-    padding: 8px;
+  .btn.bell {
+    padding: 8px 10px;
   }
 }
 .acc-custom {
