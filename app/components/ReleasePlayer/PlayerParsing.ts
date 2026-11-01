@@ -1,6 +1,9 @@
 import { tryCatchPlayer, tryCatchAPI } from "#/api/utils";
 // sourcery skip: use-object-destructuring
-const ENV_PLAYER_PARSER_URL = process.env.NEXT_PUBLIC_PLAYER_PARSER_URL;
+// Адрес парсера источников: переменная окружения, иначе локальный сервис,
+// который поднимает scripts/start-local.mjs
+const ENV_PLAYER_PARSER_URL =
+  process.env.NEXT_PUBLIC_PLAYER_PARSER_URL || "http://localhost:7000";
 
 export async function _fetchAPI(
   url: string,
@@ -42,14 +45,12 @@ export async function _fetchPlayer(
 ) {
   const { data, error } = (await tryCatchPlayer(fetch(url))) as any;
   if (error) {
-    let errorDetail = "Мы правда не знаем что произошло...";
-
-    if (error.name) {
-      if (error.name == "TypeError") {
-        errorDetail = "Не удалось подключиться к серверу";
-      } else {
-        errorDetail = `Неизвестная ошибка ${error.name}: ${error.message}`;
-      }
+    // Парсер отвечает 5xx с причиной на русском («SIBNET: страница недоступна»),
+    // сеть — TypeError. Показываем именно это, а не общую фразу.
+    let errorDetail = "Плеер не ответил";
+    if (error.name === "TypeError") {
+      errorDetail =
+        "Локальный парсер источников не запущен. Перезапустите сайт ярлыком «AniX (локально)» — парсер поднимется вместе с ним.";
     } else if (error.message) {
       errorDetail = error.message;
     }
@@ -69,8 +70,8 @@ export const _fetchKodikManifest = async (
 ) => {
   if (!ENV_PLAYER_PARSER_URL) {
     setPlayerError({
-      message: "Плеер не настроен",
-      detail: "переменная 'NEXT_PUBLIC_PLAYER_PARSER_URL' не обнаружена",
+      message: "Встроенный плеер недоступен",
+      detail: "локальный парсер источников не настроен",
     });
     return { manifest: null, poster: null };
   }

@@ -1947,6 +1947,15 @@ body[data-card="list"] .railrow {
   font-size: 11px;
   color: var(--t3);
 }
+/* Флаг страны и уточнение языка перед названием */
+.infocell-flag {
+  margin-right: 6px;
+  font-size: 14px;
+  line-height: 1;
+}
+.infocell-sub {
+  color: var(--t2);
+}
 .infocell-v {
   font-size: 13px;
   font-weight: 600;
@@ -2802,21 +2811,37 @@ body[data-card="list"] .railrow {
 
 /* ============================ Сетки и баннер ============================ */
 
-/* Сетка карточек: на планшете не больше трёх в ряд */
+/* Сетка карточек: размер из настроек, но не выходит за ширину экрана.
+   На телефоне — ровно две колонки, на планшете — три, если выбранный
+   размер меньше доли экрана, иначе столько, сколько помещается. */
+body[data-card="icon"] {
+  --cw: 104px;
+}
+
 @media (max-width: 1024px) {
   .grid {
     grid-template-columns: repeat(
       auto-fill,
-      minmax(min(var(--cw), calc(33.333% - var(--gap))), 1fr)
+      minmax(min(var(--cw), calc(33.333% - var(--gap) * 2 / 3)), 1fr)
     );
+  }
+  .railrow {
+    grid-auto-columns: min(var(--cw), 30vw);
   }
 }
 @media (max-width: 760px) {
   .grid {
-    grid-template-columns: repeat(
-      auto-fill,
-      minmax(min(var(--cw), calc(50% - var(--gap) / 2)), 1fr)
-    );
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .railrow {
+    grid-auto-columns: min(var(--cw), 44vw);
+  }
+  /* Вариант «список» на телефоне — одна колонка, иначе строка не читается */
+  body[data-card="list"] .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body[data-card="icon"] .grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--cw), 1fr));
   }
 }
 

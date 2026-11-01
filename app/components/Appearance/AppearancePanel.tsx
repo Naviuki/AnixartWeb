@@ -103,12 +103,19 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
     }
   );
 
-  // Предпросмотр меняет только текущий акцент, в список цвет попадает при выборе
+  // Предпросмотр меняет только CSS-переменную и не трогает стор:
+  // при перетаскивании маркера по спектру в список не попадает ни один оттенок
   const previewAccent = (color: string) => {
-    commitRef.current(color, false);
+    const hex = normalizeHex(color);
+    if (!hex) return;
+    document.body.style.setProperty("--acc", hex);
   };
-  // Сохраняем один цвет, когда пользователь отпустил пикер
+  // Сохраняем ровно один цвет, когда пользователь отпустил пикер или закрыл его.
+  // Если браузер не прислал change, берём текущее значение из элемента.
   const commitAccent = (color: string) => {
+    commitRef.current(color, true);
+  };
+  const endPreview = (color: string) => {
     commitRef.current(color, true);
   };
   const removeCustomAccent = (color: string) => {
@@ -265,14 +272,16 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
             type="color"
             value={normalizeHex(appearance.acc) || ACCENTS[0]}
             onChange={(event) => {
-              // change приходит при отпускании в пикере, это и есть выбор цвета
+              // change приходит при отпускании маркера: это единственный момент сохранения
               commitAccent(event.target.value);
             }}
             onInput={(event) => {
-              // Часть браузеров не шлёт input, тогда работаем по change из onChange
-              if (event.nativeEvent.type === "input") {
-                previewAccent(event.currentTarget.value);
-              }
+              // Перетаскивание маркера: только предпросмотр, без записи в список цветов
+              previewAccent(event.currentTarget.value);
+            }}
+            onBlur={(event) => {
+              // Пикер закрыли: сохраняем то, на чём остановились, или возвращаем текущий цвет
+              endPreview(event.currentTarget.value);
             }}
             aria-label="Выбрать любой акцентный цвет"
           />

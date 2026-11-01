@@ -7,8 +7,11 @@
 // Что делает скрипт:
 //  1. проверяет версию Node.js (нужна 18+);
 //  2. при первом запуске устанавливает зависимости (npm install);
-//  3. запускает dev-сервер и ждёт его готовности;
-//  4. открывает сайт в браузере по умолчанию.
+//  3. если рядом лежит anix-player-parser — поднимает и его, чтобы встроенный
+//     плеер искал источники сам (без него встроенный плеер честно скажет,
+//     что источник недоступен);
+//  4. запускает dev-сервер и ждёт его готовности;
+//  5. открывает сайт в браузере по умолчанию.
 //
 // Запуск: npm run local | node scripts/start-local.mjs | ярлык «AniX (локально)»
 // Запуск без открытия браузера: ANIX_NO_BROWSER=1
@@ -60,6 +63,74 @@ async function isUp(probeUrl) {
     return false;
   }
 }
+
+// Парсер источников плеера (kodik / libria / sibnet) — соседний проект.
+// Он нужен встроенному плееру; без него плеер честно сообщает об ошибке.
+const PARSER_URL =
+  process.env.NEXT_PUBLIC_PLAYER_PARSER_URL || "http://localhost:7000";
+const PARSER_PORT = Number(new URL(PARSER_URL).port || 7000);
+
+// Парсер с заданным плеером без url отвечает 400 — этого достаточно, чтобы
+// понять, что он жив и слушает порт
+async function isParserUp() {
+  try {
+    const response = await fetch(PARSER_URL + "/?player=kodik", {
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.status > 0;
+  } catch {
+    return false;
+  }
+}
+
+function findParserDir() {
+  const candidates = [
+    process.env.ANIX_PARSER_DIR,
+    join(ROOT, "player-parser"),
+    join(ROOT, "..", "anix-player-parser"),
+  ].filter(Boolean);
+  return candidates.find((dir) => existsSync(join(dir, "package.json")));
+}
+
+async function startParser() {
+  if (await isParserUp()) {
+    log("Парсер плеера уже запущен: " + PARSER_URL);
+    return;
+  }
+  const dir = findParserDir();
+  if (!dir) {
+    log("Парсер плеера не найден — встроенный плеер будет недоступен. Обычный плеер работает.");
+    return;
+  }
+  if (!existsSync(join(dir, "node_modules"))) {
+    log("Устанавливаю зависимости парсера плеера...");
+    spawnSync(NPM, ["install"], { cwd: dir, stdio: "inherit", shell: IS_WIN });
+  }
+  log("Запускаю парсер плеера на " + PARSER_URL);
+  const child = spawn(NPM, ["run", "serve"], {
+    cwd: dir,
+    stdio: ["ignore", "pipe", "inherit"],
+    shell: IS_WIN,
+    env: { ...process.env, PORT: String(PARSER_PORT) },
+  });
+  child.stdout.on("data", (chunk) =>
+    process.stdout.write("[парсер] " + chunk.toString())
+  );
+  children.push(child);
+  child.on("exit", (code) => {
+    if (code) err("Парсер плеера остановился (код " + code + ").");
+  });
+  // Даём парсеру время подняться, но не блокируем сайт
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 30000) {
+    if (await isParserUp()) {
+      log("Парсер плеера готов.");
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  err("Парсер плеера не ответил за 30 секунд — встроенный плеер может не работать.");
+}
 function openBrowser(url) {
   if (process.env.ANIX_NO_BROWSER === "1") {
     log("Браузер не открывается (ANIX_NO_BROWSER=1). Адрес сайта: " + url);
@@ -79,9 +150,29 @@ function killTree(child, code) {
   }
   process.exit(code);
 }
+
+// Дочерние процессы, которые нужно гасить вместе со скриптом
+const children = [];
+function shutdown(code) {
+  for (const child of children) {
+    if (!child.pid || child.killed) continue;
+    if (IS_WIN) {
+      spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+        stdio: "ignore",
+      });
+    } else {
+      child.kill("SIGTERM");
+    }
+  }
+  process.exit(code);
+}
+
 async function main() {
   checkNodeVersion();
   if (!existsSync(join(ROOT, "node_modules"))) installDeps();
+
+  // Парсер плеера поднимаем первым: dev-сервер при старте сразу его увидит
+  await startParser();
 
   log(
     "Запускаю локальный сервер: ваш ПК сам будет сервером сайта и прокси к API Anixart..."
@@ -90,7 +181,10 @@ async function main() {
     cwd: ROOT,
     stdio: ["inherit", "pipe", "inherit"],
     shell: IS_WIN,
+    // Адрес парсера передаём клиенту, иначе встроенный плеер его не найдёт
+    env: { ...process.env, NEXT_PUBLIC_PLAYER_PARSER_URL: PARSER_URL },
   });
+  children.push(dev);
 
   let url = DEFAULT_URL;
   dev.stdout.on("data", (chunk) => {
@@ -103,10 +197,11 @@ async function main() {
 
   dev.on("exit", (code) => {
     err("Сервер остановлен (код " + code + ").");
-    process.exit(code ?? 0);
+    shutdown(code ?? 0);
   });
-  process.on("SIGINT", () => killTree(dev, 0));
-  process.on("SIGTERM", () => killTree(dev, 0));
+  process.on("SIGINT", () => shutdown(0));
+  process.on("SIGTERM", () => shutdown(0));
+  process.on("SIGHUP", () => shutdown(0));
 
   const startedAt = Date.now();
   while (Date.now() - startedAt < READY_TIMEOUT_MS) {
@@ -124,7 +219,7 @@ async function main() {
   err(
     "Сервер не ответил за " + READY_TIMEOUT_MS / 1000 + " секунд. Смотрите лог выше."
   );
-  killTree(dev, 1);
+  shutdown(1);
 }
 
 main();

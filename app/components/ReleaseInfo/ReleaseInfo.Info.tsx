@@ -1,5 +1,6 @@
 import { ReleaseInfoSearchLink } from "#/components/ReleaseInfo/ReleaseInfo.SearchLink";
 import { unixToDate, minutesToTime } from "#/api/utils";
+import { countryFlag, countryLanguage } from "#/api/country";
 import { Icon } from "#/components/Icon/Icon";
 
 const weekDay = [
@@ -57,7 +58,21 @@ export const ReleaseInfoInfo = (props: {
 
       <div className="infogrid">
         <Cell icon="globe" title="Страна, сезон">
-          {props.country ? props.country : "Не указана"}
+          {props.country ?
+            <>
+              {countryFlag(props.country) && (
+                <span className="infocell-flag" aria-hidden="true">
+                  {countryFlag(props.country)}
+                </span>
+              )}
+              {props.country}
+              {countryLanguage(props.country) && (
+                <span className="infocell-sub">
+                  , {countryLanguage(props.country)}
+                </span>
+              )}
+            </>
+          : "Не указана"}
           {yearLabel ? `, ${yearLabel}` : ""}
         </Cell>
 

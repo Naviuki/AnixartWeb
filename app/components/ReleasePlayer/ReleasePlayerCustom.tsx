@@ -22,7 +22,8 @@ import {
   MediaChromeButton,
 } from "media-chrome/react";
 import {
-  MediaPlaybackRateMenu,
+  MediaChromeMenu,
+  MediaChromeMenuItem,
   MediaRenditionMenu,
   MediaSettingsMenu,
   MediaSettingsMenuButton,
@@ -44,19 +45,49 @@ import {
   saveAnonEpisodeWatched,
 } from "./ReleasePlayer";
 import { usePreferencesStore } from "#/store/preferences";
+import { useUserPlayerPreferencesStore } from "#/store/player";
+
+const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4];
+
+// Своё меню скорости: встроенное в media-chrome берёт текущую скорость видео,
+// а нужна сохранённая в настройках. Выбор запоминается и применяется к новым сериям.
+const PlaybackRateMenu = (props: {
+  rate: number;
+  onPick: (rate: number) => void;
+}) => {
+  return (
+    <MediaChromeMenu slot="submenu" hidden>
+      <div slot="title">Скорость воспроизведения</div>
+      {RATES.map((rate) => (
+        <MediaChromeMenuItem
+          key={`rate_${rate}`}
+          value={String(rate)}
+          type="radio"
+          checked={Math.abs(props.rate - rate) < 0.01}
+          onClick={(event: any) => {
+            // Меню настроек оставляем открытым, человек может сразу поменять и скорость, и качество
+            event.preventDefault();
+            event.stopPropagation();
+            props.onPick(rate);
+          }}
+        >
+          {rate}×
+        </MediaChromeMenuItem>
+      ))}
+    </MediaChromeMenu>
+  );
+};
 
 const VideoElement = ({
   type,
   src,
   poster,
   defaultPlaybackRate,
-  setDefaultPlaybackRate,
 }: {
   type: "hls" | "mp4" | null;
   src: string | null;
   poster: string | null;
   defaultPlaybackRate: number;
-  setDefaultPlaybackRate: (state) => void;
 }) => {
   const [el, setEl] = useState(null);
   const [elPrev, setElPrev] = useState(null);
@@ -78,6 +109,26 @@ const VideoElement = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [el]);
 
+  // Скорость применяем сразу после монтирования видео и при смене серии:
+  // у части браузеров атрибут defaultPlaybackRate не доходит до элемента
+  useEffect(() => {
+    if (!el || !defaultPlaybackRate || defaultPlaybackRate === 1) return;
+    const apply = () => {
+      try {
+        el.playbackRate = defaultPlaybackRate;
+      } catch {
+        /* видео ещё не готово, попробуем на canplay */
+      }
+    };
+    apply();
+    el.addEventListener("loadedmetadata", apply);
+    el.addEventListener("canplay", apply);
+    return () => {
+      el.removeEventListener("loadedmetadata", apply);
+      el.removeEventListener("canplay", apply);
+    };
+  }, [el, src, defaultPlaybackRate]);
+
   return (
     <>
       {type == "hls" ?
@@ -88,10 +139,6 @@ const VideoElement = ({
           slot="media"
           id="video-element"
           defaultPlaybackRate={defaultPlaybackRate}
-          onRateChangeCapture={(e) =>
-            // @ts-ignore
-            setDefaultPlaybackRate(e.target.playbackRate || 1)
-          }
         />
       : type == "mp4" ?
         <VideoJS
@@ -101,14 +148,11 @@ const VideoElement = ({
           slot="media"
           id="video-element"
           defaultPlaybackRate={defaultPlaybackRate}
-          onRateChangeCapture={(e) =>
-            // @ts-ignore
-            setDefaultPlaybackRate(e.target.playbackRate || 1)
-          }
         />
       : <video
           className={"object-contain h-full aspect-video"}
           slot="media"
+          {...({ defaultPlaybackRate } as any)}
         ></video>
       }
     </>
@@ -142,13 +186,16 @@ export const ReleasePlayerCustom = (props: {
     type: null,
   });
   const [playerError, setPlayerError] = useState(null);
-  const [playbackRate, setPlaybackRate] = useState(1);
+  // Скорость стартует с сохранённой в настройках, а не с 1×
+  const preferenceStore = usePreferencesStore();
+  const [playbackRate, setPlaybackRate] = useState(
+    () => useUserPlayerPreferencesStore.getState().playbackRate || 1
+  );
   const [isErrorDetailsOpen, setIsErrorDetailsOpen] = useState(false);
   const [isEpLoadingTimeout, setIsEpLoadingTimeout] = useState(null);
 
   const [retryCount, setRetryCount] = useState(0);
 
-  const preferenceStore = usePreferencesStore();
 
   useEffect(() => {
     const __getInfo = async () => {
@@ -340,7 +387,6 @@ export const ReleasePlayerCustom = (props: {
               src={playerProps.src}
               poster={playerProps.poster}
               defaultPlaybackRate={playbackRate}
-              setDefaultPlaybackRate={setPlaybackRate}
             ></VideoElement>
           : ""}
           {playerProps.type == null || playerProps.src == null ?
@@ -444,15 +490,14 @@ export const ReleasePlayerCustom = (props: {
               className={`${Styles["media-settings-menu-item"]}`}
             >
               Скорость воспроизведения
-              <MediaPlaybackRateMenu
-                slot="submenu"
-                rates={
-                  "0.25 0.5 0.75 1 1.25 1.5 1.75 2 2.25 2.5 2.75 3 3.25 3.5 3.75 4" as any
-                }
-                hidden
-              >
-                <div slot="title">Скорость воспроизведения</div>
-              </MediaPlaybackRateMenu>
+              <PlaybackRateMenu
+                rate={playbackRate}
+                onPick={(rate) => {
+                  setPlaybackRate(rate);
+                  const store = useUserPlayerPreferencesStore.getState();
+                  if (store.rememberPlaybackRate) store.setPlaybackRate(rate);
+                }}
+              />
             </MediaSettingsMenuItem>
             <MediaSettingsMenuItem
               className={`${Styles["media-settings-menu-item"]} ${Styles["quality-settings"]}`}

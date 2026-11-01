@@ -6,14 +6,28 @@
 
 /* Вариант «список»: широкая строка вместо постера */
 .slide-c-list:global(.swiper-slide) {
-  width: 320px;
+  width: var(--slide-list, 320px);
 }
 
 /* Вариант «иконки»: компактная карточка без подписей */
 .slide-c-icon:global(.swiper-slide) {
-  width: 104px;
+  width: var(--cw);
 }
 
 body[data-card="list"] .slide:global(.swiper-slide) {
-  width: 320px;
+  width: var(--slide-list, 320px);
+}
+
+/* На телефоне слайд не шире экрана и не уже читаемой величины */
+@media (max-width: 760px) {
+  .slide:global(.swiper-slide) {
+    width: min(var(--cw), 46vw);
+  }
+  .slide-c-icon:global(.swiper-slide) {
+    width: min(var(--cw), 30vw);
+  }
+  .slide-c-list:global(.swiper-slide),
+  body[data-card="list"] .slide:global(.swiper-slide) {
+    width: min(var(--slide-list, 320px), 86vw);
+  }
 }

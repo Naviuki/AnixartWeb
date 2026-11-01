@@ -25,6 +25,30 @@ const DropdownTheme = {
 
 const STORAGE_KEY = "anonEpisodesWatched";
 
+// Хосты, которые принимают скорость в адресе страницы встраивания.
+// Остальные плееры (iframe чужого сайта) скорость изменить извне не дают.
+function withPlaybackRate(url: string, rate: number): string {
+  if (!url || !rate || rate === 1) return url;
+  try {
+    const parsed = new URL(url, window.location.href);
+    const host = parsed.hostname;
+    if (host.includes("kodik")) {
+      // У Kodik параметра скорости нет, но он не мешает: его читают его виджеты
+      parsed.searchParams.set("speed", String(rate));
+    } else if (host.includes("youtube")) {
+      parsed.searchParams.set("rate", String(rate));
+    } else {
+      parsed.searchParams.set("playbackRate", String(rate));
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+// Скорости, которые показываем в обычном плеере
+const RATE_CHOICES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
 // localStorage может содержать битый JSON или данные старого формата
 function readWatched(): Record<string, any> {
   if (typeof window === "undefined") return {};
@@ -343,8 +367,7 @@ export const ReleasePlayer = (props: { id: number }) => {
   }
 
   // Плеер, у которого нет серий, пропускается автоматически
-  function skipSource(source: Source) {
-    const rest = sources.filter((item) => item.id !== source.id);
+  function skipSource(source: Source) {    const rest = sources.filter((item) => item.id !== source.id);
     setSources(rest);
     if (rest.length) {
       setSelectedSource(rest[0]);
@@ -381,6 +404,14 @@ export const ReleasePlayer = (props: { id: number }) => {
 
   const canRenderPlayer =
     state === "ready" && !!selectedEpisode && episodes.length > 0 && !!selectedSource;
+
+  // Скорость обычного плеера: из настроек, если включено «запоминать»
+  const rate = preferredStore.rememberPlaybackRate
+    ? preferredStore.playbackRate
+    : 1;
+  const selectRate = (value: number) => {
+    preferredStore.setPlaybackRate(value);
+  };
 
   return (
     <div className="box" style={{ padding: 12 }}>
@@ -426,13 +457,33 @@ export const ReleasePlayer = (props: { id: number }) => {
             ))}
           </Dropdown>
         )}
+
+        <Dropdown
+          label={`Скорость: ${rate}×`}
+          theme={DropdownTheme}
+          renderTrigger={() => (
+            <button type="button" className="chip" aria-label={`Скорость: ${rate}×`}>
+              Скорость: {rate}×
+              <Icon name="chevron" size={14} />
+            </button>
+          )}
+        >
+          {RATE_CHOICES.map((choice) => (
+            <DropdownItem
+              key={`rate_${choice}`}
+              onClick={() => selectRate(choice)}
+            >
+              {choice}×
+            </DropdownItem>
+          ))}
+        </Dropdown>
       </div>
 
       <div className="player-frame">
         {canRenderPlayer && selectedEpisode ?
           <iframe
             allowFullScreen={true}
-            src={selectedEpisode.url}
+            src={withPlaybackRate(selectedEpisode.url, rate)}
             className="w-full h-full"
             title="Плеер"
           ></iframe>

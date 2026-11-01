@@ -155,8 +155,7 @@ export const SettingsModal = (props: {
                     <span className="set-body">
                       <span className="set-t">Запоминать скорость</span>
                       <span className="set-s">
-                        Скорость из встроенного плеера применяется ко всем
-                        тайтлам
+                        Скорость применяется ко всем тайтлам и обоим плеерам
                       </span>
                     </span>
                     <label className="check" style={{ marginLeft: "auto" }}>
