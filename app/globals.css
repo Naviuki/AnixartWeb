@@ -1148,6 +1148,17 @@ body[data-card="list"] .rcard-desc {
   border-radius: 8px;
 }
 
+/* Кнопка-франшиза в списке подписок не растягивается */
+a.related-btn {
+  flex: none;
+  text-decoration: none;
+}
+@media (max-width: 560px) {
+  a.related-btn span {
+    display: none;
+  }
+}
+
 /* Настройки: разделы слева, содержимое справа */
 .set-layout {
   display: grid;

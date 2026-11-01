@@ -118,11 +118,18 @@ export const NotificationsPage = () => {
         : <div className="mb-list">
             {list.map(([id, sub]) => (
               <div key={id} className="row">
-                <Link href={`/release/${id}`} className="row-body">
+                <Link href={`/release/${sub.relatedId || id}`} className="row-body">
                   <span className="row-title">{sub.title}</span>
                   <span className="row-sub">
                     С {new Date(sub.since).toLocaleDateString("ru-RU")}
                   </span>
+                </Link>
+                <Link
+                  href={`/related/${sub.relatedId || id}`}
+                  className="btn g related-btn"
+                >
+                  <Icon name="layers" size={14} />
+                  Франшиза
                 </Link>
                 <button
                   type="button"

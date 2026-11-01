@@ -1,5 +1,3 @@
-"use client";
-
 // Проверка новых сезонов у тайтлов, за которыми следит пользователь.
 // Работает в браузере: запросы идут через встроенный прокси сайта,
 // а для авторизованного пользователя синхронизируется в его профиле.
@@ -13,16 +11,20 @@ const MIN_CHECK_INTERVAL = 1000 * 60 * 60 * 6; // не чаще раза в 6 ч
 const MAX_SUBSCRIPTIONS = 60;
 const REMOTE_KEY = "anix_seasons_v1";
 
-type RelatedItem = {
+export type RelatedItem = {
   id: number;
   title_ru?: string;
+  title_original?: string;
   image?: string;
   category?: { name?: string };
   status?: { name?: string };
   release_date?: string;
+  season?: number;
 };
 
-async function fetchRelated(releaseId: number): Promise<RelatedItem[] | null> {
+export async function fetchRelated(
+  releaseId: number
+): Promise<RelatedItem[] | null> {
   try {
     const response = await fetch(`${ENDPOINTS.release.related}/${releaseId}/0`);
     if (!response.ok) return null;
@@ -34,11 +36,12 @@ async function fetchRelated(releaseId: number): Promise<RelatedItem[] | null> {
   }
 }
 
-// Новым сезоном считаем анонс или вышедший сериал франшизы
-function looksLikeNewSeason(item: RelatedItem) {
-  const status = (item.status?.name || "").toLowerCase();
-  const category = (item.category?.name || "").toLowerCase();
-  return category.includes("сериал") && status.length > 0;
+// Сериалы франшизы: новые сезоны и полнометражные продолжения
+export function serials(related: RelatedItem[]) {
+  return related.filter((item) => {
+    const category = (item.category?.name || "").toLowerCase();
+    return category.includes("сериал");
+  });
 }
 
 type RemoteState = {
@@ -47,11 +50,10 @@ type RemoteState = {
   subs: Record<string, unknown>;
 };
 
-// Синхронизация на аккаунте: профиль пользователя из API Anixart
+// Синхронизация на аккаунте: статус профиля читается только владельцем
 export async function pullRemoteSubscriptions(token?: string) {
   if (!token) return null;
   try {
-    // Статус профиля служит хранилищем: он читается через API и доступен только владельцу
     const response = await fetch(
       `${ENDPOINTS.user.profile}?token=${encodeURIComponent(token)}`
     );
@@ -90,11 +92,11 @@ export async function checkSeasonNotices(): Promise<SeasonNotice[]> {
 
   for (const [releaseIdRaw, sub] of subs) {
     const releaseId = Number(releaseIdRaw);
-    const related = await fetchRelated(releaseId);
+    // Связанные релизы берутся по франшизе, если она известна, иначе по самому тайтлу
+    const related = await fetchRelated(sub.relatedId || releaseId);
     if (!related) continue;
 
-    const items = related.filter(looksLikeNewSeason);
-
+    const items = serials(related);
     // Без сохранённого значения считаем всю текущую франшизу уже известной
     const known = sub.lastRelatedCount;
     if (typeof known !== "number") {
@@ -109,8 +111,8 @@ export async function checkSeasonNotices(): Promise<SeasonNotice[]> {
 
     if (items.length <= known) continue;
 
-    // Показываем только те связанные релизы, которых не было на момент подписки
-    const fresh = items.slice(0, items.length - known);
+    // Новые сериалы считаются от конца списка: он отсортирован по дате
+    const fresh = items.slice(known);
     store.subscribe(releaseId, {
       title: sub.title,
       relatedId: sub.relatedId,
@@ -147,11 +149,16 @@ export async function autosubscribeTitles(
     // Ключ тот же, что у колокольчика: франшиза, если она известна
     const key = item.relatedId || item.id;
     if (store.subs[key]) continue;
+
+    // Количество сериалов на момент подписки
+    const related = await fetchRelated(item.relatedId || item.id);
+    const count = related ? serials(related).length : 0;
+
     store.subscribe(key, {
       title: item.title,
       relatedId: item.relatedId,
       since: Date.now(),
-      lastRelatedCount: 0,
+      lastRelatedCount: count,
     });
     changed = true;
   }
@@ -164,4 +171,7 @@ export function shouldCheckNow() {
   return Date.now() - (lastCheck || 0) > MIN_CHECK_INTERVAL;
 }
 
-export const notificationsReady = true;
+// Отладочная точка для ручной проверки, видна в консоли браузера
+if (typeof window !== "undefined") {
+  (window as any).__anixCheckSeasons = checkSeasonNotices;
+}

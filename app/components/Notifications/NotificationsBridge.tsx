@@ -16,7 +16,7 @@ import {
   checkSeasonNotices,
 } from "#/components/Notifications/seasonCheck";
 
-type BookmarkItem = { id: number; title_ru?: string; related?: { id?: number } };
+type BookmarkItem = { id: number; title_ru?: string; relatedId?: number };
 
 async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
   const urls: string[] = [];
@@ -32,17 +32,27 @@ async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
       const response = await fetch(url);
       if (!response.ok) continue;
       const data = await response.json();
-      const items = Array.isArray(data?.content) ? data.content : [];
-      for (const item of items) {
-        const release = item?.release || item;
-        if (release?.id) {
+        const items = Array.isArray(data?.content) ? data.content : [];
+        for (const item of items) {
+          const release = item?.release || item;
+          if (!release?.id) continue;
+          // Версия API может не отдавать related в списке, тогда берём из карточки релиза
+          let relatedId = release.related?.id;
+          if (!relatedId) {
+            try {
+              const info = await fetch(`${ENDPOINTS.release.info}/${release.id}`);
+              if (info.ok) {
+                const data = await info.json();
+                relatedId = data?.release?.related?.id;
+              }
+            } catch {}
+          }
           result.push({
             id: release.id,
             title_ru: release.title_ru,
-            related: release.related,
+            relatedId,
           });
         }
-      }
     } catch {}
   }
   return result;
@@ -88,7 +98,7 @@ export const NotificationsBridge = () => {
             items.map((item) => ({
               id: item.id,
               title: item.title_ru || `Релиз ${item.id}`,
-              relatedId: item.related?.id,
+              relatedId: item.relatedId,
             }))
           );
         }
