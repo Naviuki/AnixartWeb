@@ -6,8 +6,14 @@ import { Icon } from "#/components/Icon/Icon";
 import { useNotificationsStore } from "#/store/notifications";
 import { ENDPOINTS } from "#/api/config";
 
-export const SeasonBell = (props: { releaseId: number; title: string }) => {
+export const SeasonBell = (props: {
+  releaseId: number;
+  title: string;
+  poster?: string;
+}) => {
   const [relatedId, setRelatedId] = useState<number | undefined>(undefined);
+  // Обложка нужна списку подписок; если её не передали, берём из карточки релиза
+  const [poster, setPoster] = useState<string | undefined>(props.poster);
   // id подписки: тайтл или вся франшиза, если у релиза есть related
   const key = relatedId || props.releaseId;
   const isSubscribed = useNotificationsStore((store) =>
@@ -29,14 +35,15 @@ export const SeasonBell = (props: { releaseId: number; title: string }) => {
         const response = await fetch(`${ENDPOINTS.release.info}/${props.releaseId}`);
         if (!response.ok) return;
         const data = await response.json();
-        const id = data?.release?.related?.id;
-        if (alive && id) setRelatedId(Number(id));
+        const rel = data?.release;
+        if (alive && rel?.related?.id) setRelatedId(Number(rel.related.id));
+        if (alive && rel?.image && !poster) setPoster(rel.image);
       } catch {}
     })();
     return () => {
       alive = false;
     };
-  }, [props.releaseId]);
+  }, [props.releaseId, poster]);
 
   // Сколько связанных релизов уже есть: всё, что появится позже, считается новым
   useEffect(() => {
@@ -82,6 +89,7 @@ export const SeasonBell = (props: { releaseId: number; title: string }) => {
         }
         subscribe(key, {
           title: props.title,
+          poster: poster || props.poster,
           relatedId,
           since: Date.now(),
           // Всё, что есть сейчас, известно; новые релизы появятся позже

@@ -3,7 +3,7 @@
 // Мост между локальными подписками, закладками и профилем аккаунта.
 // Запускается один раз на клиенте и только если пользователь включил
 // уведомления в настройках.
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ENDPOINTS } from "#/api/config";
 import { useUserStore } from "#/store/auth";
 import { usePreferencesStore } from "#/store/preferences";
@@ -16,7 +16,12 @@ import {
   checkSeasonNotices,
 } from "#/components/Notifications/seasonCheck";
 
-type BookmarkItem = { id: number; title_ru?: string; relatedId?: number };
+type BookmarkItem = {
+  id: number;
+  title_ru?: string;
+  image?: string;
+  relatedId?: number;
+};
 
 async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
   const urls: string[] = [];
@@ -31,28 +36,31 @@ async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
     try {
       const response = await fetch(url);
       if (!response.ok) continue;
-      const data = await response.json();
-        const items = Array.isArray(data?.content) ? data.content : [];
-        for (const item of items) {
-          const release = item?.release || item;
-          if (!release?.id) continue;
-          // Версия API может не отдавать related в списке, тогда берём из карточки релиза
-          let relatedId = release.related?.id;
-          if (!relatedId) {
-            try {
-              const info = await fetch(`${ENDPOINTS.release.info}/${release.id}`);
-              if (info.ok) {
-                const data = await info.json();
-                relatedId = data?.release?.related?.id;
-              }
-            } catch {}
-          }
-          result.push({
-            id: release.id,
-            title_ru: release.title_ru,
-            relatedId,
-          });
+          const data = await response.json();
+      const items = Array.isArray(data?.content) ? data.content : [];
+      for (const item of items) {
+        const release = item?.release || item;
+        if (!release?.id) continue;
+        // Версия API может не отдавать related в списке, тогда берём из карточки релиза
+        let relatedId = release.related?.id;
+        let image = release.image;
+        if (!relatedId || !image) {
+          try {
+            const info = await fetch(`${ENDPOINTS.release.info}/${release.id}`);
+            if (info.ok) {
+              const data = await info.json();
+              relatedId = relatedId || data?.release?.related?.id;
+              image = image || data?.release?.image;
+            }
+          } catch {}
         }
+        result.push({
+          id: release.id,
+          title_ru: release.title_ru,
+          image,
+          relatedId,
+        });
+      }
     } catch {}
   }
   return result;
@@ -61,6 +69,9 @@ async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
 export const NotificationsBridge = () => {
   const token = useUserStore((store) => store.token);
   const isAuth = useUserStore((store) => store.isAuth);
+  const hydrated = useUserStore((store) => store._hasHydrated);
+  // 401/500 по профилю запоминаем, чтобы не повторять запрос каждый рендер
+  const remoteFailed = useRef(false);
   const autoFavorites = usePreferencesStore(
     (store) => store.autonotify.favorites
   );
@@ -69,13 +80,19 @@ export const NotificationsBridge = () => {
   );
   const hydrateRemote = useNotificationsStore((store) => store.hydrate);
 
+  // Когда пользователь вышел, повторы снова разрешены
+  useEffect(() => {
+    if (!isAuth) remoteFailed.current = false;
+  }, [isAuth]);
+
   useEffect(() => {
     let alive = true;
 
     (async () => {
       // 1. Что изменилось на аккаунте с прошлого запуска
-      if (isAuth && token) {
+      if (isAuth && token && hydrated && !remoteFailed.current) {
         const remote = await pullRemoteSubscriptions(token);
+        if (alive && remote === null) remoteFailed.current = true;
         if (alive && remote?.subs) {
           const local = useNotificationsStore.getState().subs;
           const merged: Record<number, SeasonSubscription> = {
@@ -98,6 +115,7 @@ export const NotificationsBridge = () => {
             items.map((item) => ({
               id: item.id,
               title: item.title_ru || `Релиз ${item.id}`,
+              poster: item.image,
               relatedId: item.relatedId,
             }))
           );

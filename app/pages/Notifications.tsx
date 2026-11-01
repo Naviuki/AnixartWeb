@@ -117,8 +117,23 @@ export const NotificationsPage = () => {
           </div>
         : <div className="mb-list">
             {list.map(([id, sub]) => (
-              <div key={id} className="row">
-                <Link href={`/release/${sub.relatedId || id}`} className="row-body">
+              <div key={id} className="row sub-row">
+                <Link
+                  href={`/release/${sub.relatedId || id}`}
+                  className="sub-cover"
+                  aria-label={sub.title}
+                >
+                  {sub.poster ?
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={sub.poster} alt="" loading="lazy" />
+                  : <span className="sub-cover-empty">
+                      <Icon name="film" size={18} />
+                    </span>}
+                </Link>
+                <Link
+                  href={`/release/${sub.relatedId || id}`}
+                  className="row-body"
+                >
                   <span className="row-title">{sub.title}</span>
                   <span className="row-sub">
                     С {new Date(sub.since).toLocaleDateString("ru-RU")}
@@ -127,17 +142,19 @@ export const NotificationsPage = () => {
                 <Link
                   href={`/related/${sub.relatedId || id}`}
                   className="btn g related-btn"
+                  aria-label="Открыть франшизу"
                 >
                   <Icon name="layers" size={14} />
-                  Франшиза
+                  <span>Франшиза</span>
                 </Link>
                 <button
                   type="button"
                   className="btn g"
                   onClick={() => unsubscribe(Number(id))}
+                  aria-label="Отписаться"
                 >
                   <Icon name="x" size={14} />
-                  Отписаться
+                  <span className="unsub-label">Отписаться</span>
                 </button>
               </div>
             ))}

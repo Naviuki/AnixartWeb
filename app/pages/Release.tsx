@@ -127,6 +127,7 @@ export const ReleasePage = (props: any) => {
         <SeasonBell
           releaseId={data.release.id}
           title={data.release.title_ru}
+          poster={data.release.image}
         />
       </ReleaseInfoBasics>
 

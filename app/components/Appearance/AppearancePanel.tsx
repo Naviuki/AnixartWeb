@@ -1,6 +1,7 @@
 "use client";
 
 // Панель вида содержит только контролы, поэтому её используют и во вкладке настроек
+import { useRef } from "react";
 import { DEFAULT_APPEARANCE, usePreferencesStore } from "#/store/preferences";
 import { Icon } from "#/components/Icon/Icon";
 
@@ -20,10 +21,14 @@ const LAYOUTS: { id: "side" | "rail" | "top" | "dock"; title: string }[] = [
   { id: "dock", title: "Плавающий док" },
 ];
 
-const CARDS: { id: "overlay" | "below" | "list"; title: string }[] = [
+const CARDS: {
+  id: "overlay" | "below" | "list" | "icon";
+  title: string;
+}[] = [
   { id: "overlay", title: "Постер" },
   { id: "below", title: "Постер + подпись" },
   { id: "list", title: "Список" },
+  { id: "icon", title: "Иконки" },
 ];
 
 const THEMES: { id: "dark" | "light" | "amoled"; title: string }[] = [
@@ -76,14 +81,35 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
   };
 
   const customAccents = appearance.customAccents || [];
-  // Свой цвет добавляется в список и сразу становится активным
-  const setCustomAccent = (color: string) => {
-    const hex = normalizeHex(color);
-    if (!hex) return;
-    const next = customAccents.includes(hex) ?
-      customAccents
-    : [hex, ...customAccents].slice(0, 12);
-    setAppearance({ acc: hex, customAccents: next });
+
+  // Замыкания в обработчиках держат старые данные, поэтому пишем через ref
+  const commitRef = useRef(
+    (color: string, final: boolean) => {
+      const hex = normalizeHex(color);
+      if (!hex) return;
+      const list =
+        usePreferencesStore.getState().appearance.customAccents || [];
+      if (ACCENTS.includes(hex)) {
+        setAppearance({ acc: hex });
+        return;
+      }
+      if (!final) {
+        setAppearance({ acc: hex });
+        return;
+      }
+      const next =
+        list.includes(hex) ? list : [hex, ...list].slice(0, 8);
+      setAppearance({ acc: hex, customAccents: next });
+    }
+  );
+
+  // Предпросмотр меняет только текущий акцент, в список цвет попадает при выборе
+  const previewAccent = (color: string) => {
+    commitRef.current(color, false);
+  };
+  // Сохраняем один цвет, когда пользователь отпустил пикер
+  const commitAccent = (color: string) => {
+    commitRef.current(color, true);
   };
   const removeCustomAccent = (color: string) => {
     const next = customAccents.filter((item) => item !== color);
@@ -185,41 +211,36 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
 
       <div className="ap-group">
         <div className="ap-title">Акцент</div>
+        {/* Стандартные цвета без пересечений с пользовательскими */}
         <div className="acc-row">
-          {[...ACCENTS, ...customAccents].map((color) => (
-            <button
-              key={color}
-              type="button"
-              className={`acc-swatch ${
-                appearance.acc === color ? "on" : ""
-              } ${customAccents.includes(color) ? "own" : ""}`}
-              style={{ background: color }}
-              onClick={() => setAppearance({ acc: color })}
-              aria-label={
-                customAccents.includes(color) ?
-                  `Свой акцент ${color}`
-                : `Акцент ${color}`
-              }
-              aria-pressed={appearance.acc === color}
-            />
-          ))}
+          {ACCENTS.filter((color) => !customAccents.includes(color)).map(
+            (color) => (
+              <button
+                key={`std_${color}`}
+                type="button"
+                className={`acc-swatch ${
+                  appearance.acc === color ? "on" : ""
+                }`}
+                style={{ background: color }}
+                onClick={() => setAppearance({ acc: color })}
+                aria-label={`Акцент ${color}`}
+                aria-pressed={appearance.acc === color}
+              />
+            )
+          )}
         </div>
-        {customAccents.length > 0 && (
-          <p className="hint">
-            Цвета с точкой добавлены вами. Удалить можно в «Настройки → Внешний
-            вид».
-          </p>
-        )}
 
         {customAccents.length > 0 && (
           <>
             <div className="ap-subtitle">Ваши цвета</div>
             <div className="acc-row">
               {customAccents.map((color) => (
-                <span key={color} className="acc-custom">
+                <span key={`own_${color}`} className="acc-custom">
                   <button
                     type="button"
-                    className={`acc-swatch ${appearance.acc === color ? "on" : ""}`}
+                    className={`acc-swatch ${
+                      appearance.acc === color ? "on" : ""
+                    }`}
                     style={{ background: color }}
                     onClick={() => setAppearance({ acc: color })}
                     aria-label={`Свой акцент ${color}`}
@@ -243,7 +264,16 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
           <input
             type="color"
             value={normalizeHex(appearance.acc) || ACCENTS[0]}
-            onChange={(event) => setCustomAccent(event.target.value)}
+            onChange={(event) => {
+              // change приходит при отпускании в пикере, это и есть выбор цвета
+              commitAccent(event.target.value);
+            }}
+            onInput={(event) => {
+              // Часть браузеров не шлёт input, тогда работаем по change из onChange
+              if (event.nativeEvent.type === "input") {
+                previewAccent(event.currentTarget.value);
+              }
+            }}
             aria-label="Выбрать любой акцентный цвет"
           />
           <span>Выбрать свой цвет</span>

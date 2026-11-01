@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { deepmerge } from "deepmerge-ts";
 
@@ -6,6 +6,8 @@ import { deepmerge } from "deepmerge-ts";
 export type SeasonSubscription = {
   // Название на момент подписки, чтобы список читался без запросов к API
   title: string;
+  // Обложка тайтла для списка подписок
+  poster?: string;
   // id связанной франшизы, если известен
   relatedId?: number;
   // Время подписки
@@ -78,6 +80,7 @@ export const useNotificationsStore = create<notificationsState>()(
             ...get().subs,
             [key]: {
               title: data.title,
+              poster: data.poster,
               relatedId: data.relatedId,
               since: data.since,
               lastRelatedCount: data.lastRelatedCount,

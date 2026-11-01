@@ -141,7 +141,7 @@ export async function checkSeasonNotices(): Promise<SeasonNotice[]> {
 
 // Автоподписка для закладок и избранного, включается только в настройках
 export async function autosubscribeTitles(
-  items: { id: number; title: string; relatedId?: number }[]
+  items: { id: number; title: string; poster?: string; relatedId?: number }[]
 ) {
   const store = useNotificationsStore.getState();
   let changed = false;
@@ -156,6 +156,7 @@ export async function autosubscribeTitles(
 
     store.subscribe(key, {
       title: item.title,
+      poster: item.poster,
       relatedId: item.relatedId,
       since: Date.now(),
       lastRelatedCount: count,

@@ -5,7 +5,7 @@ import { deepmerge } from "deepmerge-ts";
 
 export type Appearance = {
   layout: "side" | "rail" | "top" | "dock";
-  card: "overlay" | "below" | "list";
+  card: "overlay" | "below" | "list" | "icon";
   theme: "dark" | "light" | "amoled";
   acc: string;
   r: number;
@@ -111,6 +111,7 @@ interface preferencesState {
   setParams: (params: preferencesState["params"]) => void;
   setAppearance: (patch: Partial<Appearance>) => void;
   setAutonotify: (patch: Partial<preferencesState["autonotify"]>) => void;
+  setCard: (card: Appearance["card"]) => void;
   resetPlayerPreferences: () => void;
 }
 
@@ -167,6 +168,9 @@ export const usePreferencesStore = create<preferencesState>()(
       },
       setAutonotify(patch) {
         set({ autonotify: { ...get().autonotify, ...patch } });
+      },
+      setCard: (card) => {
+        set({ appearance: { ...get().appearance, card } });
       },
       resetPlayerPreferences() {
         // Возвращает обычный плеер и стирает запомненные озвучки и плееры

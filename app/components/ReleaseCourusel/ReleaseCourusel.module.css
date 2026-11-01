@@ -4,6 +4,16 @@
   height: auto;
 }
 
+/* Вариант «список»: широкая строка вместо постера */
+.slide-c-list:global(.swiper-slide) {
+  width: 320px;
+}
+
+/* Вариант «иконки»: компактная карточка без подписей */
+.slide-c-icon:global(.swiper-slide) {
+  width: 104px;
+}
+
 body[data-card="list"] .slide:global(.swiper-slide) {
   width: 320px;
 }

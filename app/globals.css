@@ -495,9 +495,10 @@ body[data-layout="dock"] .nav-item.active .nav-label {
 .mnav {
   display: none;
 }
-@media (max-width: 760px) {
+@media (max-width: 1024px) {
+  /* Планшет и телефон: боковое меню превращается в нижнюю панель */
   .nav {
-    display: none !important;
+    display: none;
   }
   .mnav {
     display: flex;
@@ -532,10 +533,75 @@ body[data-layout="dock"] .nav-item.active .nav-label {
     color: var(--acc);
   }
   .app {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr);
   }
   .main {
     padding-bottom: 96px;
+  }
+
+  /* Компактная раскладка: только иконки, без подписей */
+  body[data-layout="rail"] .mnav-item span:not(.mnav-ava) {
+    display: none;
+  }
+  body[data-layout="rail"] .mnav-item {
+    padding: 6px 14px;
+  }
+
+  /* Плавающий док: капсула снизу, отступы от краёв */
+  body[data-layout="dock"] .mnav {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    height: 58px;
+    border: 1px solid var(--bd);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px #0006;
+    padding-bottom: 0;
+  }
+  body[data-layout="dock"] .main {
+    padding-bottom: 104px;
+  }
+
+  /* Верхняя панель: меню переезжает наверх, снизу пусто */
+  body[data-layout="top"] .mnav {
+    top: 0;
+    bottom: auto;
+    height: 56px;
+    border-top: none;
+    border-bottom: 1px solid var(--bd);
+    padding-bottom: 0;
+    padding-top: env(safe-area-inset-top);
+    justify-content: space-between;
+    padding-left: 6px;
+    padding-right: 6px;
+    z-index: 40;
+  }
+  body[data-layout="top"] .mnav-item {
+    min-width: 44px;
+    padding: 4px;
+    gap: 2px;
+    font-size: 9px;
+  }
+  body[data-layout="top"] .mnav-item span:not(.mnav-ava) {
+    display: none;
+  }
+  body[data-layout="top"] .main {
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: 24px;
+  }
+  body[data-layout="top"] .top {
+    position: static;
+    margin-top: 8px;
+  }
+  /* Плавающая кнопка плавно поднимается над панелью */
+  .fab {
+    bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+  body[data-layout="dock"] .fab {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+  body[data-layout="top"] .fab {
+    bottom: calc(24px + env(safe-area-inset-bottom));
   }
 }
 
@@ -954,6 +1020,42 @@ body[data-card="list"] .rcard-desc {
   display: -webkit-box;
 }
 
+/* Вариант «иконки»: только постер, название под ним мелким шрифтом */
+body[data-card="icon"] .rcard {
+  padding: 6px;
+  border-radius: 12px;
+}
+body[data-card="icon"] .link-slide {
+  width: 104px !important;
+  max-width: 104px !important;
+}
+body[data-card="icon"] .rcard-poster {
+  aspect-ratio: 2 / 3;
+}
+body[data-card="icon"] .rcard-title {
+  display: none;
+}
+body[data-card="icon"] .rcard-below {
+  display: -webkit-box;
+  font-size: 11px;
+  line-height: 1.2;
+  margin-top: 5px;
+}
+body[data-card="icon"] .rcard-meta,
+body[data-card="icon"] .rcard-genres,
+body[data-card="icon"] .rcard-chips,
+body[data-card="icon"] .rcard-desc {
+  display: none;
+}
+body[data-card="icon"] .rcard-badge {
+  font-size: 9px;
+  padding: 1px 4px;
+}
+body[data-card="icon"] .rcard-rate {
+  font-size: 9px;
+  padding: 1px 4px;
+}
+
 
 /* ============================ Панель «Вид» ============================ */
 
@@ -1155,6 +1257,43 @@ a.related-btn {
 }
 @media (max-width: 560px) {
   a.related-btn span {
+    display: none;
+  }
+}
+
+/* Строка подписки с обложкой */
+.sub-row {
+  gap: 12px;
+  align-items: center;
+}
+.sub-cover {
+  flex: none;
+  width: 48px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--s2);
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+.sub-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sub-cover-empty {
+  color: var(--t3);
+  display: grid;
+  place-items: center;
+}
+@media (max-width: 560px) {
+  .sub-cover {
+    width: 42px;
+    height: 62px;
+  }
+  .unsub-label {
     display: none;
   }
 }

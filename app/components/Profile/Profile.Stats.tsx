@@ -72,18 +72,38 @@ export const ProfileStats = (props: {
     };
   };
   useEffect(() => {
-    if (
-      document.getElementById("donut-chart") &&
-      typeof ApexCharts !== "undefined"
-    ) {
-      const chart = new ApexCharts(
-        document.getElementById("donut-chart"),
-        getChartOptions()
-      );
-      chart.render();
+    const container = document.getElementById("donut-chart");
+    if (!container || typeof ApexCharts === "undefined") return;
+
+    // Без данных сумма ноль, и график уходит в NaN, поэтому ждём реальных чисел
+    const sum = props.lists.reduce((acc, v) => acc + (Number(v) || 0), 0);
+    if (sum <= 0) return;
+
+    const chart = new ApexCharts(container, getChartOptions());
+
+    // Рисуем только когда контейнер получил реальную ширину
+    const render = () => {
+      if (container.clientWidth > 0) chart.render();
+    };
+    if (container.clientWidth > 0) {
+      render();
+    } else {
+      const observer = new ResizeObserver(() => {
+        if (container.clientWidth > 0) {
+          observer.disconnect();
+          render();
+        }
+      });
+      observer.observe(container);
     }
+
+    return () => {
+      try {
+        chart.destroy();
+      } catch {}
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [props.lists.join(",")]);
 
   const total = props.lists.reduce((sum, value) => sum + (value || 0), 0);
 

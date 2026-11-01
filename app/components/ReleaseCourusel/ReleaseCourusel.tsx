@@ -7,6 +7,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Styles from "./ReleaseCourusel.module.css";
 import "swiper/css";
 import { Icon } from "#/components/Icon/Icon";
+import { usePreferencesStore } from "#/store/preferences";
 
 export const ReleaseCourusel = (props: {
   sectionTitle: string;
@@ -18,6 +19,8 @@ export const ReleaseCourusel = (props: {
   };
 }) => {
   const [swiper, setSwiper] = useState<any>(null);
+  const card = usePreferencesStore((state) => state.appearance.card);
+  const width = usePreferencesStore((state) => state.appearance.w);
 
   return (
     <section className={`sec ${Styles.section}`}>
@@ -40,7 +43,16 @@ export const ReleaseCourusel = (props: {
         >
           {props.content.map((release) => {
             return (
-              <SwiperSlide key={release.id} className={Styles.slide}>
+              <SwiperSlide
+                key={release.id}
+                // Классы карточки задаются здесь, чтобы варианты иконками
+                // и списком менялись вместе с выбранной раскладкой
+                className={`${Styles.slide} slide-c-${card}`}
+                style={{
+                  width:
+                    card === "list" ? undefined : width,
+                }}
+              >
                 <ReleaseLink {...release} settings={props.settings} />
               </SwiperSlide>
             );
