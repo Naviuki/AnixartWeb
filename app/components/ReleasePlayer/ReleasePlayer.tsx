@@ -1,19 +1,21 @@
 "use client";
 
-import { Spinner } from "#/components/Spinner/Spinner";
 import { useUserStore } from "#/store/auth";
 import { useUserPlayerPreferencesStore } from "#/store/player";
-import { Dropdown, DropdownItem } from "flowbite-react";
-import { Icon } from "#/components/Icon/Icon";
 import { ENDPOINTS } from "#/api/config";
-import { useState, useEffect } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/mousewheel";
-import "swiper/css/scrollbar";
-import { Navigation, Mousewheel, Scrollbar } from "swiper/modules";
+import { useState, useEffect, useRef } from "react";
+import { Spinner } from "#/components/Spinner/Spinner";
+import { Icon } from "#/components/Icon/Icon";
+import { Dropdown, DropdownItem } from "flowbite-react";
+
 import { usePreferencesStore } from "#/store/preferences";
+
+// Озвучки и плееры могут прийти без нужных полей, поэтому всё читается защищённо
+type Voiceover = { id: number; name: string; [key: string]: any };
+type Source = { id: number; name: string; [key: string]: any };
+type Episode = { position: number; url?: string; name?: string; is_watched?: boolean; [key: string]: any };
+
+type LoadState = "loading" | "ready" | "error" | "empty";
 
 const DropdownTheme = {
   floating: {
@@ -21,17 +23,29 @@ const DropdownTheme = {
   },
 };
 
-async function _fetch(url: string) {
-  const data = fetch(url)
-    .then((res) => {
-      if (res.ok) {
-        return res.json();
-      } else {
-        throw new Error("Error fetching data");
-      }
-    })
-    .catch((err) => console.log(err));
-  return data;
+const STORAGE_KEY = "anonEpisodesWatched";
+
+// localStorage может содержать битый JSON или данные старого формата
+function readWatched(): Record<string, any> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed;
+  } catch {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+    return {};
+  }
+}
+
+function isPlainObject(value: any): value is Record<string, any> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
 export const getAnonEpisodesWatched = (
@@ -39,16 +53,15 @@ export const getAnonEpisodesWatched = (
   Source: number,
   Voiceover: number
 ) => {
-  const anonEpisodesWatched =
-    JSON.parse(localStorage.getItem("anonEpisodesWatched")) || {};
+  const anonEpisodesWatched = readWatched();
 
-  if (!anonEpisodesWatched.hasOwnProperty(Release)) {
+  if (!isPlainObject(anonEpisodesWatched[Release])) {
     anonEpisodesWatched[Release] = {};
   }
-  if (!anonEpisodesWatched[Release].hasOwnProperty(Source)) {
+  if (!isPlainObject(anonEpisodesWatched[Release][Source])) {
     anonEpisodesWatched[Release][Source] = {};
   }
-  if (!anonEpisodesWatched[Release][Source].hasOwnProperty(Voiceover)) {
+  if (!isPlainObject(anonEpisodesWatched[Release][Source][Voiceover])) {
     anonEpisodesWatched[Release][Source][Voiceover] = {};
   }
 
@@ -61,25 +74,16 @@ const getAnonCurrentEpisodeWatched = (
   Voiceover: number,
   Episode: number
 ) => {
-  const anonEpisodesWatched =
-    JSON.parse(localStorage.getItem("anonEpisodesWatched")) || {};
+  const anonEpisodesWatched = readWatched();
 
-  if (!anonEpisodesWatched.hasOwnProperty(Release)) {
-    return false;
-  }
-  if (!anonEpisodesWatched[Release].hasOwnProperty(Source)) {
-    return false;
-  }
-  if (!anonEpisodesWatched[Release][Source].hasOwnProperty(Voiceover)) {
-    return false;
-  }
-  if (
-    !anonEpisodesWatched[Release][Source][Voiceover].hasOwnProperty(Episode)
-  ) {
-    return false;
-  }
+  const byRelease = anonEpisodesWatched[Release];
+  if (!isPlainObject(byRelease)) return false;
+  const bySource = byRelease[Source];
+  if (!isPlainObject(bySource)) return false;
+  const byVoiceover = bySource[Voiceover];
+  if (!isPlainObject(byVoiceover)) return false;
 
-  return anonEpisodesWatched[Release][Source][Voiceover][Episode];
+  return Boolean(byVoiceover[Episode]);
 };
 
 export const saveAnonEpisodeWatched = (
@@ -88,332 +92,401 @@ export const saveAnonEpisodeWatched = (
   Voiceover: number,
   Episode: number
 ) => {
-  const anonEpisodesWatched = getAnonEpisodesWatched(
-    Release,
-    Source,
-    Voiceover
-  );
-  localStorage.setItem(
-    "anonEpisodesWatched",
-    JSON.stringify({
-      ...anonEpisodesWatched,
-      [Release]: {
-        ...anonEpisodesWatched[Release],
-        [Source]: {
-          ...anonEpisodesWatched[Release][Source],
-          [Voiceover]: {
-            ...anonEpisodesWatched[Release][Source][Voiceover],
-            [Episode]: true,
-          },
-        },
-      },
-    })
-  );
+  try {
+    const anonEpisodesWatched = getAnonEpisodesWatched(
+      Release,
+      Source,
+      Voiceover
+    );
+    anonEpisodesWatched[Release][Source][Voiceover][Episode] = true;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(anonEpisodesWatched));
+  } catch {}
 };
+
+// Приводит ответ API к массиву с проверкой обязательных полей
+function toList(value: any): any[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === "object");
+}
+
+function pickByIdOrName<T extends { id: number; name: string }>(
+  list: T[],
+  preferredName?: string,
+  preferredId?: number
+): T | null {
+  if (preferredId) {
+    const byId = list.find((item) => item.id === preferredId);
+    if (byId) return byId;
+  }
+  if (preferredName) {
+    const byName = list.find((item) => item.name === preferredName);
+    if (byName) return byName;
+  }
+  return list[0] || null;
+}
 
 export const ReleasePlayer = (props: { id: number }) => {
   const userStore = useUserStore();
-  const preferredVoiceoverStore = useUserPlayerPreferencesStore();
-  const storedPreferredVoiceover =
-    preferredVoiceoverStore.getPreferredVoiceover(props.id);
-  const storedPreferredPlayer = preferredVoiceoverStore.getPreferredPlayer(
-    props.id
-  );
-  const [voiceoverInfo, setVoiceoverInfo] = useState(null);
-  const [selectedVoiceover, setSelectedVoiceover] = useState(null);
-  const [sourcesInfo, setSourcesInfo] = useState(null);
-  const [selectedSource, setSelectedSource] = useState(null);
-  const [episodeInfo, setEpisodeInfo] = useState(null);
-  const [selectedEpisode, setSelectedEpisode] = useState(null);
-  const [error, setError] = useState(null);
-  const setSelectedVoiceoverAndSaveAsPreferred = (voiceover: any) => {
-    setSelectedVoiceover(voiceover);
-    preferredVoiceoverStore.setPreferredVoiceover(props.id, voiceover.name);
-  };
-  const setSelectedPlayerAndSaveAsPreferred = (player: any) => {
-    setSelectedSource(player);
-    preferredVoiceoverStore.setPreferredPlayer(props.id, player.name);
-  };
+  const preferredStore = useUserPlayerPreferencesStore();
   const preferenceStore = usePreferencesStore();
 
-  function _setError(error: string) {
-    setVoiceoverInfo(null);
-    setSelectedVoiceover(null);
-    setSourcesInfo(null);
-    setSelectedSource(null);
-    setEpisodeInfo(null);
-    setSelectedEpisode(null);
-    setError(error);
+  const [voiceovers, setVoiceovers] = useState<Voiceover[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [selectedVoiceover, setSelectedVoiceover] = useState<Voiceover | null>(
+    null
+  );
+  const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
+  const [state, setState] = useState<LoadState>("loading");
+  const [message, setMessage] = useState("");
+
+  // Сброс плеера из настроек обнуляет список и заново подбирает озвучку
+  const playerResetAt = usePreferencesStore(
+    (store) => store.setup?.playerResetAt || 0
+  );
+
+  // Номер запроса: ответы от прошлой озвучки или плеера игнорируются
+  const requestRef = useRef(0);
+
+  async function requestJson(url: string): Promise<any | null> {
+    try {
+      const response = await fetch(url);
+      // Ответ не годится: ошибка сети, пустое тело или неожиданный код
+      if (!response.ok) return null;
+      const text = await response.text();
+      if (!text) return null;
+      const json = JSON.parse(text);
+      if (!json || typeof json !== "object") return null;
+      return json;
+    } catch {
+      return null;
+    }
   }
 
-  async function _fetchInfo(
-    url: string,
-    type: "voiceover" | "sources" | "episodes"
-  ) {
-    let data: any = {};
-    data = await fetch(url)
-      .then((res) => {
-        if (res.ok) {
-          return res.json();
-        } else {
-          throw new Error("Error fetching data");
-        }
-      })
-      .catch((err) => {
-        _setError("Ошибка получение ответа от сервера");
-        return;
-      });
+  async function loadVoiceovers() {
+    const ticket = ++requestRef.current;
 
-    if (!data || (data && Object.keys(data).length == 0)) {
-      _setError("Ошибка получение данных с сервера");
+    setState("loading");
+    setMessage("");
+    setSelectedEpisode(null);
+    setSelectedSource(null);
+    setSources([]);
+    setEpisodes([]);
+
+    const data = await requestJson(`${ENDPOINTS.release.episode}/${props.id}`);
+    if (ticket !== requestRef.current) return;
+
+    const list = toList(data?.types).filter(
+      (item) => item.id !== undefined && item.name
+    );
+    setVoiceovers(list);
+
+    if (!list.length) {
+      setSelectedVoiceover(null);
+      setState("empty");
+      setMessage("Для этого релиза пока нет озвучек");
       return;
     }
 
-    if (type == "voiceover") {
-      setVoiceoverInfo(data.types);
-      const preferredVoiceover =
-        data.types.find(
-          (voiceover: any) => voiceover.name === storedPreferredVoiceover
-        ) || data.types[0];
-      setSelectedVoiceover(preferredVoiceover);
-    } else if (type == "sources") {
-      setSourcesInfo(data.sources);
-      const preferredSource =
-        data.sources.find(
-          (source: any) => source.name === storedPreferredPlayer
-        ) || data.sources[0];
-      setSelectedSource(preferredSource);
-    } else if (type == "episodes") {
-      if (data.episodes.length === 0) {
-        const remSources = sourcesInfo.filter(
-          (source) => source.id !== selectedSource.id
-        );
-        setSourcesInfo(remSources);
-        setSelectedSource(remSources[0]);
-        return;
-      } else {
-        setEpisodeInfo(data.episodes);
-        setSelectedEpisode(data.episodes[0]);
-
-        const WatchedEpisodes = getAnonEpisodesWatched(
-          props.id,
-          selectedSource.id,
-          selectedVoiceover.id
-        );
-        if (
-          Object.keys(
-            WatchedEpisodes[props.id][selectedSource.id][selectedVoiceover.id]
-          ).length != 0
-        ) {
-          const watchedEpisodes =
-            WatchedEpisodes[props.id][selectedSource.id][selectedVoiceover.id];
-          let lastWatchedEpisode = Number(Object.keys(watchedEpisodes).pop());
-          if (
-            !["Sibnet", "Sibnet (не работает)"].includes(selectedSource.name)
-          ) {
-            lastWatchedEpisode = Number(lastWatchedEpisode) - 1;
-          }
-          setSelectedEpisode(data.episodes[lastWatchedEpisode]);
-        }
-      }
-    } else {
-      _setError("Неизвестный тип запроса");
-    }
+    setSelectedVoiceover(
+      pickByIdOrName(list, preferredStore.getPreferredVoiceover(props.id))
+    );
   }
 
+  // 1. Озвучки
   useEffect(() => {
-    _fetchInfo(`${ENDPOINTS.release.episode}/${props.id}`, "voiceover");
+    loadVoiceovers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.id]);
+  }, [props.id, playerResetAt]);
 
+  // 2. Плееры для выбранной озвучки
   useEffect(() => {
-    if (selectedVoiceover) {
-      _fetchInfo(
-        `${ENDPOINTS.release.episode}/${props.id}/${selectedVoiceover.id}`,
-        "sources"
+    if (!selectedVoiceover?.id) return;
+    const ticket = ++requestRef.current;
+
+    (async () => {
+      setState("loading");
+      setMessage("");
+      setSelectedSource(null);
+      setSelectedEpisode(null);
+      setSources([]);
+      setEpisodes([]);
+
+      const data = await requestJson(
+        `${ENDPOINTS.release.episode}/${props.id}/${selectedVoiceover.id}`
       );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.id, selectedVoiceover]);
+      if (ticket !== requestRef.current) return;
 
+      const list = toList(data?.sources).filter(
+        (item) => item.id !== undefined && item.name
+      );
+      setSources(list);
+
+      if (!list.length) {
+        setState("empty");
+        setMessage("У этой озвучки нет доступных плееров");
+        return;
+      }
+
+      setSelectedSource(
+        pickByIdOrName(list, preferredStore.getPreferredPlayer(props.id))
+      );
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.id, selectedVoiceover?.id]);
+
+  // 3. Эпизоды для выбранного плеера
   useEffect(() => {
-    if (selectedSource) {
+    if (!selectedVoiceover?.id || !selectedSource?.id) return;
+    const ticket = ++requestRef.current;
+
+    (async () => {
+      setState("loading");
+      setMessage("");
+      setSelectedEpisode(null);
+      setEpisodes([]);
+
       let url = `${ENDPOINTS.release.episode}/${props.id}/${selectedVoiceover.id}/${selectedSource.id}`;
       if (userStore.token) {
-        url = `${ENDPOINTS.release.episode}/${props.id}/${selectedVoiceover.id}/${selectedSource.id}?token=${userStore.token}`;
+        url = `${url}?token=${userStore.token}`;
       }
-      _fetchInfo(url, "episodes");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.id, selectedSource, userStore.token]);
 
-  function _addToHistory(episode: any) {
-    if (props.id && selectedSource && selectedVoiceover && episode) {
-      const anonEpisodesWatched = getAnonEpisodesWatched(
-        props.id,
-        selectedSource.id,
-        selectedVoiceover.id
+      const data = await requestJson(url);
+      if (ticket !== requestRef.current) return;
+
+      const list = toList(data?.episodes).filter(
+        (item) => item && item.position !== undefined
       );
-      if (
-        preferenceStore.flags.saveWatchHistory &&
-        !episode.is_watched &&
-        !Object.keys(
-          anonEpisodesWatched[props.id][selectedSource.id][selectedVoiceover.id]
-        ).includes(episode.position.toString())
-      ) {
-        episode.is_watched = true;
-        saveAnonEpisodeWatched(
-          props.id,
-          selectedSource.id,
-          selectedVoiceover.id,
-          episode.position
-        );
-        if (userStore.token) {
-          fetch(
-            `${ENDPOINTS.statistic.addHistory}/${props.id}/${selectedSource.id}/${episode.position}?token=${userStore.token}`
-          );
-          fetch(
-            `${ENDPOINTS.statistic.markWatched}/${props.id}/${selectedSource.id}/${episode.position}?token=${userStore.token}`
-          );
-        }
+      setEpisodes(list);
+
+      if (!list.length) {
+        setState("empty");
+        setMessage("У этого плеера нет доступных серий");
+        return;
       }
+
+      setSelectedEpisode(list[getResumeIndex(list)]);
+      setState("ready");
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.id, selectedVoiceover?.id, selectedSource?.id, userStore.token]);
+
+  // Возвращает индекс последней просмотренной серии, не выходя за границы списка
+  function getResumeIndex(list: Episode[]) {
+    if (!selectedVoiceover?.id || !selectedSource?.id) return 0;
+
+    const watched = getAnonEpisodesWatched(
+      props.id,
+      selectedSource.id,
+      selectedVoiceover.id
+    );
+    const saved = watched[props.id][selectedSource.id][selectedVoiceover.id];
+    const keys = Object.keys(saved || {});
+    if (!keys.length) return 0;
+
+    const last = Number(keys[keys.length - 1]);
+    if (!Number.isFinite(last)) return 0;
+
+    // Sibnet отдаёт позиции начиная с нуля, остальные плееры с единицы
+    const shifted = selectedSource.name?.includes("Sibnet") ? last : last - 1;
+    return Math.min(Math.max(shifted, 0), list.length - 1);
+  }
+
+  function selectVoiceover(voiceover: Voiceover) {
+    setSelectedVoiceover(voiceover);
+    preferredStore.setPreferredVoiceover(props.id, voiceover.name);
+  }
+
+  function selectSource(source: Source) {
+    setSelectedSource(source);
+    preferredStore.setPreferredPlayer(props.id, source.name);
+  }
+
+  function addToHistory(episode: Episode) {
+    if (!props.id || !selectedSource || !selectedVoiceover || !episode) return;
+
+    const watched = getAnonEpisodesWatched(
+      props.id,
+      selectedSource.id,
+      selectedVoiceover.id
+    );
+    const alreadyWatched = Boolean(
+      watched[props.id][selectedSource.id][selectedVoiceover.id][episode.position]
+    );
+
+    if (!preferenceStore.flags.saveWatchHistory || episode.is_watched || alreadyWatched) {
+      return;
+    }
+
+    episode.is_watched = true;
+    saveAnonEpisodeWatched(
+      props.id,
+      selectedSource.id,
+      selectedVoiceover.id,
+      episode.position
+    );
+
+    if (userStore.token) {
+      fetch(
+        `${ENDPOINTS.statistic.addHistory}/${props.id}/${selectedSource.id}/${episode.position}?token=${userStore.token}`
+      ).catch(() => {});
+      fetch(
+        `${ENDPOINTS.statistic.markWatched}/${props.id}/${selectedSource.id}/${episode.position}?token=${userStore.token}`
+      ).catch(() => {});
     }
   }
+
+  function selectEpisode(episode: Episode) {
+    setSelectedEpisode(episode);
+    addToHistory(episode);
+  }
+
+  // Плеер, у которого нет серий, пропускается автоматически
+  function skipSource(source: Source) {
+    const rest = sources.filter((item) => item.id !== source.id);
+    setSources(rest);
+    if (rest.length) {
+      setSelectedSource(rest[0]);
+    } else {
+      setSelectedSource(null);
+      setState("empty");
+      setMessage("Ни у одного плеера этой озвучки нет серий");
+    }
+  }
+
+  if (state === "loading" || !selectedVoiceover) {
+    const errorLike = state === "error";
+    return (
+      <div className="box" style={{ padding: 12 }}>
+        <div className="player-frame">
+          <div className="player-state">
+            {errorLike ?
+              <>
+                <Icon name="info" size={22} />
+                <p>{message || "Не удалось загрузить плеер"}</p>
+              </>
+            : <Spinner />}
+          </div>
+        </div>
+        {state === "empty" && (
+          <div className="player-state-note">
+            <Icon name="info" size={16} />
+            <span>{message}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const canRenderPlayer =
+    state === "ready" && !!selectedEpisode && episodes.length > 0 && !!selectedSource;
 
   return (
     <div className="box" style={{ padding: 12 }}>
-      {!voiceoverInfo || !sourcesInfo || !episodeInfo ?
-        <div
-          className="empty"
-          style={{ marginBottom: 0, aspectRatio: "16 / 9", justifyContent: "center" }}
+      <div className="chiprow" style={{ marginBottom: 10 }}>
+        <Dropdown
+          label={`Озвучка: ${selectedVoiceover.name}`}
+          theme={DropdownTheme}
+          renderTrigger={() => (
+            <button type="button" className="chip">
+              Озвучка: {selectedVoiceover.name}
+              <Icon name="chevron" size={14} />
+            </button>
+          )}
         >
-          {!error ?
-            <Spinner />
-          : <p>{error}</p>}
-        </div>
-      : <>
-          <div className="chiprow" style={{ marginBottom: 10 }}>
-            <Dropdown
-              label={`Озвучка: ${selectedVoiceover.name}`}
-              theme={DropdownTheme}
-              renderTrigger={() => (
-                <button type="button" className="chip">
-                  Озвучка: {selectedVoiceover.name}
-                  <Icon name="chevron" size={14} />
-                </button>
-              )}
+          {voiceovers.map((voiceover) => (
+            <DropdownItem
+              key={`voiceover_${voiceover.id}`}
+              onClick={() => selectVoiceover(voiceover)}
             >
-              {voiceoverInfo.map((voiceover: any) => (
-                <DropdownItem
-                  key={`voiceover_${voiceover.id}`}
-                  onClick={() =>
-                    setSelectedVoiceoverAndSaveAsPreferred(voiceover)
-                  }
-                >
-                  {voiceover.name}
-                </DropdownItem>
-              ))}
-            </Dropdown>
-            <Dropdown
-              label={`Плеер: ${selectedSource.name}`}
-              theme={DropdownTheme}
-              renderTrigger={() => (
-                <button type="button" className="chip">
-                  Плеер: {selectedSource.name}
-                  <Icon name="chevron" size={14} />
-                </button>
-              )}
-            >
-              {sourcesInfo.map((source: any) => (
-                <DropdownItem
-                  key={`source_${source.id}`}
-                  onClick={() => setSelectedPlayerAndSaveAsPreferred(source)}
-                >
-                  {source.name}
-                </DropdownItem>
-              ))}
-            </Dropdown>
-          </div>
+              {voiceover.name}
+            </DropdownItem>
+          ))}
+        </Dropdown>
 
-          <div className="player-frame">
-            {selectedEpisode ?
-              <iframe
-                allowFullScreen={true}
-                src={selectedEpisode.url}
-                className="w-full h-full"
-              ></iframe>
-            : <p className="muted">Ошибка загрузки плеера</p>}
-          </div>
+        {selectedSource && sources.length > 0 && (
+          <Dropdown
+            label={`Плеер: ${selectedSource.name}`}
+            theme={DropdownTheme}
+            renderTrigger={() => (
+              <button type="button" className="chip">
+                Плеер: {selectedSource.name}
+                <Icon name="chevron" size={14} />
+              </button>
+            )}
+          >
+            {sources.map((source) => (
+              <DropdownItem
+                key={`source_${source.id}`}
+                onClick={() => selectSource(source)}
+              >
+                {source.name}
+              </DropdownItem>
+            ))}
+          </Dropdown>
+        )}
+      </div>
 
-          <div style={{ marginTop: 10 }}>
-            <Swiper
-              modules={[Navigation, Mousewheel, Scrollbar]}
-              spaceBetween={8}
-              slidesPerView={"auto"}
-              direction={"horizontal"}
-              mousewheel={{
-                enabled: true,
-                sensitivity: 4,
-              }}
-              scrollbar={{
-                enabled: true,
-                draggable: true,
-              }}
-              allowTouchMove={true}
-              style={
-                {
-                  "--swiper-scrollbar-bottom": "0",
-                } as React.CSSProperties
-              }
-            >
-              {episodeInfo.map((episode: any) => {
-                const isCurrent =
-                  selectedEpisode.position === episode.position;
-                const isWatched =
-                  episode.is_watched ||
-                  getAnonCurrentEpisodeWatched(
-                    props.id,
-                    selectedSource.id,
-                    selectedVoiceover.id,
-                    episode.position
-                  );
-                return (
-                  <SwiperSlide
-                    key={`episode_${episode.position}`}
-                    style={{ maxWidth: "fit-content" }}
-                    className="pb-2"
+      <div className="player-frame">
+        {canRenderPlayer && selectedEpisode ?
+          <iframe
+            allowFullScreen={true}
+            src={selectedEpisode.url}
+            className="w-full h-full"
+            title="Плеер"
+          ></iframe>
+        : <div className="player-state">
+            {state === "empty" ?
+              <>
+                <Icon name="info" size={22} />
+                <p>{message || "Для этого плеера нет серий"}</p>
+                {selectedSource && sources.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => skipSource(selectedSource)}
                   >
-                    <button
-                      type="button"
-                      className={`ep ${isCurrent ? "on" : ""} ${
-                        isWatched ? "done" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedEpisode(episode);
-                        _addToHistory(episode);
-                      }}
-                      disabled={isCurrent}
-                    >
-                      <span className="ep-check" />
-                      <span className="ep-n">
-                        {episode.name ?
-                          episode.name
-                        : `${
-                            !["Sibnet", "Sibnet (не работает)"].includes(
-                              selectedSource.name
-                            ) ?
-                              episode.position
-                            : episode.position + 1
-                          } серия`}
-                      </span>
-                    </button>
-                  </SwiperSlide>
-                );
-              })}
-            </Swiper>
-          </div>
-        </>
-      }
+                    Попробовать другой плеер
+                  </button>
+                )}
+              </>
+            : <Spinner />}
+          </div>}
+      </div>
+
+      {state === "ready" && episodes.length > 0 && (
+        <div className="epgrid" style={{ marginTop: 10 }}>
+          {episodes.map((episode) => {
+            const isCurrent = selectedEpisode?.position === episode.position;
+            const isWatched =
+              Boolean(episode.is_watched) ||
+              (selectedSource && selectedVoiceover ?
+                getAnonCurrentEpisodeWatched(
+                  props.id,
+                  selectedSource.id,
+                  selectedVoiceover.id,
+                  episode.position
+                )
+              : false);
+
+            return (
+              <button
+                key={`episode_${episode.position}`}
+                type="button"
+                className={`ep ${isCurrent ? "on" : ""} ${isWatched ? "done" : ""}`}
+                onClick={() => selectEpisode(episode)}
+                disabled={isCurrent}
+              >
+                <span className="ep-check" />
+                <span className="ep-n">
+                  {episode.name ? episode.name : `${episode.position + 1} Серия`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

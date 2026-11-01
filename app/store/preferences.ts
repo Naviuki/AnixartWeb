@@ -12,6 +12,8 @@ export type Appearance = {
   w: number;
   g: number;
   photo: string;
+  // Свои акцентные цвета пользователя, появляются в списке рядом со стандартными
+  customAccents: string[];
   sec: {
     hero: number;
     cont: number;
@@ -39,6 +41,7 @@ export const DEFAULT_APPEARANCE: Appearance = {
   w: 168,
   g: 14,
   photo: "",
+  customAccents: [],
   sec: { hero: 1, cont: 1, last: 1, ong: 1, col: 1 },
   nav: { home: 1, disc: 1, search: 1, book: 1, fav: 1, coll: 1, hist: 1 },
 };
@@ -94,10 +97,21 @@ interface preferencesState {
     // }
   };
   appearance: Appearance;
+  // Автоподписка на новые сезоны для тайтлов из закладок и избранного
+  autonotify: {
+    favorites: boolean;
+    watched: boolean;
+  };
+  setup: {
+    // Сброс плеера: очищает сохранённые озвучки и плееры
+    playerResetAt: number;
+  };
   setHasHydrated: (state: boolean) => void;
   setFlags: (flags: preferencesState["flags"]) => void;
   setParams: (params: preferencesState["params"]) => void;
   setAppearance: (patch: Partial<Appearance>) => void;
+  setAutonotify: (patch: Partial<preferencesState["autonotify"]>) => void;
+  resetPlayerPreferences: () => void;
 }
 
 export const usePreferencesStore = create<preferencesState>()(
@@ -122,6 +136,13 @@ export const usePreferencesStore = create<preferencesState>()(
         },
       },
       appearance: { ...DEFAULT_APPEARANCE },
+      autonotify: {
+        favorites: false,
+        watched: false,
+      },
+      setup: {
+        playerResetAt: 0,
+      },
       setHasHydrated: (state) => {
         set({
           _hasHydrated: state,
@@ -142,6 +163,22 @@ export const usePreferencesStore = create<preferencesState>()(
             sec: { ...current.sec, ...(patch.sec || {}) },
             nav: { ...current.nav, ...(patch.nav || {}) },
           },
+        });
+      },
+      setAutonotify(patch) {
+        set({ autonotify: { ...get().autonotify, ...patch } });
+      },
+      resetPlayerPreferences() {
+        // Возвращает обычный плеер и стирает запомненные озвучки и плееры
+        set({
+          params: {
+            ...get().params,
+            experimental: {
+              ...(get().params.experimental || {}),
+              newPlayer: false,
+            },
+          },
+          setup: { ...get().setup, playerResetAt: Date.now() },
         });
       },
     }),

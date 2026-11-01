@@ -1057,6 +1057,175 @@ body[data-card="list"] .rcard-desc {
   outline: 2px solid var(--t1);
   outline-offset: 2px;
 }
+
+// Пользовательский цвет в списке стандартных акцентов
+.acc-swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.acc-swatch.own::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--s1);
+}
+.bell-label {
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .bell-label {
+    display: none;
+  }
+  .btn.bell.on {
+    padding: 8px;
+  }
+}
+.acc-custom {
+  position: relative;
+  display: inline-flex;
+}
+/* Свой акцентный цвет: кружок с крестиком удаления */
+.acc-del {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--bd);
+  background: var(--s1);
+  color: var(--t2);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+.acc-del:hover {
+  color: var(--t1);
+  border-color: var(--t2);
+}
+.ap-subtitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--t3);
+  margin: 12px 0 6px;
+}
+.acc-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--bd);
+  border-radius: var(--r);
+  background: var(--s2);
+  font-size: 13px;
+  cursor: pointer;
+}
+.acc-pick input[type="color"] {
+  width: 34px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.acc-pick input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.acc-pick input[type="color"]::-webkit-color-swatch {
+  border: 1px solid var(--bd);
+  border-radius: 8px;
+}
+
+/* Настройки: разделы слева, содержимое справа */
+.set-layout {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 0;
+}
+.set-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--t2);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  min-height: 40px;
+}
+.set-nav-item:hover {
+  background: var(--s2);
+  color: var(--t1);
+}
+.set-nav-item.on {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 35%, transparent);
+  color: var(--t1);
+}
+.set-nav-item.on svg {
+  color: var(--acc);
+}
+.set-pane {
+  min-width: 0;
+}
+.ap-body.compact .ap-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Узкий экран: разделы горизонтальной прокруткой сверху */
+@media (max-width: 760px) {
+  .set-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .set-nav {
+    position: sticky;
+    top: 44px;
+    z-index: 4;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    background: var(--s1);
+    scrollbar-width: none;
+  }
+  .set-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .set-nav-item {
+    flex: none;
+    width: auto;
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+  .set-nav-item span {
+    white-space: nowrap;
+  }
+}
 .ap-slider {
   display: flex;
   align-items: center;
@@ -2032,8 +2201,7 @@ body[data-card="list"] .railrow {
   padding-right: 4px;
 }
 
-/* Рамка встроенного плеера */
-.player-frame {
+/* Рамка встроенного плеера */.player-frame {
   position: relative;
   aspect-ratio: 16 / 9;
   border-radius: 10px;
@@ -2043,6 +2211,31 @@ body[data-card="list"] .railrow {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Состояния плеера: загрузка, пусто, ошибка */
+.player-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--t3);
+  padding: 16px;
+  font-size: 13px;
+}
+.player-state p {
+  margin: 0;
+  max-width: 34ch;
+}
+.player-state-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--t2);
 }
 
 /* Боковая колонка релиза: информация в одну колонку */

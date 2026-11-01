@@ -75,8 +75,11 @@ export const _fetchKodikManifest = async (
     return { manifest: null, poster: null };
   }
 
+  // Сервер принимает домены kodik.info и kodik.cc, поэтому kodikplayer.com переводится сам
+  const parserUrl = url.replace(/kodikplayer\.com/, "kodik.info");
+
   const data = await _fetchPlayer(
-    `${ENV_PLAYER_PARSER_URL}/?url=${url}&player=kodik`,
+    `${ENV_PLAYER_PARSER_URL}/?url=${encodeURIComponent(parserUrl)}&player=kodik`,
     setPlayerError
   );
 
