@@ -18,6 +18,7 @@ export const ProfileActivityComment = (props: {
                 <Link
                   href={`/profile/${comment.profile.id}`}
                   className="comment-ava"
+                  aria-label={`Профиль ${comment.profile.login}`}
                 >
                   <Image
                     width={28}

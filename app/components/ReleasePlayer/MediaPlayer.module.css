@@ -233,7 +233,8 @@
   display: none;
 }
 
-.quality-settings[submenusize="1"] {
+/* Пункт «Качество» скрывает сам компонент, когда вариантов нет */
+.quality-settings[submenusize="0"] {
   display: none;
 }
 

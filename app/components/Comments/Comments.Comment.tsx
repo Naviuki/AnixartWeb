@@ -156,7 +156,11 @@ export const CommentsComment = (props: {
     <>
       <article className={`comment ${props.isSubComment ? "sub" : ""}`}>
         <div className="comment-head">
-          <Link href={`/profile/${props.profile.id}`} className="comment-ava">
+          <Link
+            href={`/profile/${props.profile.id}`}
+            className="comment-ava"
+            aria-label={`Профиль ${props.profile.login}`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={props.profile.avatar} alt="" />
           </Link>

@@ -285,6 +285,21 @@ export const ReleasePlayerCustom = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episode.selected, retryCount]);
 
+  // Качество: пункт меню нужен, только когда у истории есть варианты
+  const [hasRenditions, setHasRenditions] = useState(false);
+  useEffect(() => {
+    const media = document.getElementById("video-element") as any;
+    if (!media) return;
+    // HLS-элемент сообщает о доступных качествах готовым списком
+    const read = () => {
+      const api = media.api || media.querySelector?.("video");
+      setHasRenditions(Boolean(api?.levels?.length > 1));
+    };
+    read();
+    media.addEventListener("loadedmetadata", read);
+    return () => media.removeEventListener("loadedmetadata", read);
+  }, [playerProps.src]);
+
   useEffect(() => {
     if (document && document.querySelector("media-chrome-dialog")) {
       document
@@ -501,6 +516,9 @@ export const ReleasePlayerCustom = (props: {
             </MediaSettingsMenuItem>
             <MediaSettingsMenuItem
               className={`${Styles["media-settings-menu-item"]} ${Styles["quality-settings"]}`}
+              // Скрытое пункты меню ломают навигацию с клавиатуры и озвучку,
+              // поэтому без доступных качеств пункт убирается из меню совсем
+              style={hasRenditions ? undefined : { display: "none" }}
             >
               Качество
               <MediaRenditionMenu slot="submenu" hidden>
@@ -550,6 +568,7 @@ export const ReleasePlayerCustom = (props: {
           <MediaControlBar className={`${Styles["media-control-bar"]}`}>
             <MediaChromeButton
               className={`${Styles["media-button"]} w-[calc(2*var(--base))] z-[2]`}
+              aria-label="Предыдущая серия"
               onClick={() => _prevEpisode()}
             >
               <div slot="tooltip-content">Предыдущая серия</div>
@@ -606,6 +625,7 @@ export const ReleasePlayerCustom = (props: {
             </MediaPlayButton>
             <MediaChromeButton
               className={`${Styles["media-button"]} w-[calc(2*var(--base))] z-[2]`}
+              aria-label="Следующая серия"
               onClick={() => _nextEpisode()}
             >
               <div slot="tooltip-content">Следующая серия</div>

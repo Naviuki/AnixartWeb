@@ -19,10 +19,13 @@ export function RelatedPage(props: { id: number | string; title: string }) {
 
   const getKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.content.length) return null;
+    // API страницы начинаются с единицы: запрос /related/<id>/0 отвечает 404.
+    // Если у франшизы нет частей, страница ниже покажет об этом текст.
+    const page = pageIndex + 1;
     if (token) {
-      return `${ENDPOINTS.release.related}/${props.id}/${pageIndex}?token=${token}&API-Version=v2`;
+      return `${ENDPOINTS.release.related}/${props.id}/${page}?token=${token}&API-Version=v2`;
     }
-    return `${ENDPOINTS.release.related}/${props.id}/${pageIndex}?API-Version=v2`;
+    return `${ENDPOINTS.release.related}/${props.id}/${page}?API-Version=v2`;
   };
 
   const { data, error, isLoading, size, setSize } = useSWRInfinite(
