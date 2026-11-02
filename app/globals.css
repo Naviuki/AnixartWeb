@@ -184,7 +184,13 @@ body[data-layout="dock"] .app {
   color: var(--t3);
 }
 .search:focus {
+  /* Только при клике мышью рамка не нужна; при переходе клавиатурой фокус виден */
   outline: none;
+  border-color: var(--acc);
+}
+.search:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
   border-color: var(--acc);
 }
 .top .view-btn {
@@ -244,7 +250,7 @@ body[data-layout="dock"] .app {
 }
 .btn.p {
   background: var(--acc);
-  color: #fff;
+  color: var(--acc-ink, #fff);
   border-color: transparent;
 }
 .btn.p:hover {
@@ -293,6 +299,9 @@ body[data-layout="dock"] .app {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  /* Ссылка «Показать все» — цель нажатия, поэтому не меньше 24px по высоте */
+  min-height: 28px;
+  padding: 0 2px;
 }
 .sh a:hover,
 .sh .link:hover {
@@ -528,7 +537,7 @@ body[data-layout="dock"] .nav-item.active .nav-label {
     overflow: hidden;
     flex: none;
     background: var(--acc);
-    color: #fff;
+    color: var(--acc-ink, #fff);
     font-weight: 700;
     font-size: 14px;
   }
@@ -592,7 +601,7 @@ body[data-layout="dock"] .nav-item.active .nav-label {
     height: 22px;
   }
   .mnav-item.active {
-    color: var(--acc);
+    color: var(--acc-text, var(--acc));
   }
   /* На телефоне в сетке один столбец: правило должно перебивать data-layout */
   body[data-layout] .app {
@@ -860,7 +869,7 @@ body[data-layout="dock"] .nav-item.active .nav-label {
   align-items: center;
   gap: 4px;
   background: var(--acc);
-  color: #fff;
+  color: var(--acc-ink, #fff);
   font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
@@ -1554,8 +1563,13 @@ a.related-btn {
 .form input:focus,
 .form textarea:focus,
 .form select:focus {
-  outline: none;
   border-color: var(--acc);
+}
+.form input:focus-visible,
+.form textarea:focus-visible,
+.form select:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
 }
 
 /* ============================ Шапка страницы ============================ */
@@ -1656,7 +1670,7 @@ a.related-btn {
   font-size: 12px;
 }
 .accent {
-  color: var(--acc);
+  color: var(--acc-text, var(--acc));
 }
 .divider {
   height: 1px;
@@ -2200,6 +2214,13 @@ body[data-card="list"] .railrow {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+}
+/* Кнопки оценки — иконки без подписи, поэтому цель нажатия не меньше 24px */
+.comment-foot .votes button {
+  min-width: 24px;
+  min-height: 24px;
+  justify-content: center;
+  border-radius: 6px;
 }
 .comment-foot .votes b {
   font-size: 12px;
@@ -3078,6 +3099,15 @@ body[data-card="icon"] {
   color: var(--t2);
   line-height: 1.6;
 }
+/* Внутри текста о приложении есть простые ссылки — они должны читаться */
+.about-text a {
+  color: var(--acc-text, var(--acc));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.about-text a:hover {
+  color: var(--t1);
+}
 .about-links {
   display: flex;
   flex-wrap: wrap;
@@ -3565,7 +3595,7 @@ body[data-card="icon"] {
 
 /* Закреплённый озвучка-вариант в плеере */
 .vo-pin {
-  color: var(--acc);
+  color: var(--acc-text, var(--acc));
   flex: none;
 }
 
@@ -3785,8 +3815,11 @@ body[data-card="icon"] {
   font-size: 13px;
 }
 .set-select:focus {
-  outline: none;
   border-color: var(--acc);
+}
+.set-select:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
 }
 .set-row-mob {
   display: none !important;
@@ -3828,7 +3861,7 @@ body[data-card="icon"] {
 }
 .mnav-item.active .mnav-ava {
   background: var(--acc);
-  color: #fff;
+  color: var(--acc-ink, #fff);
 }
 
 /* Строки-кнопки внутри модальных списков */

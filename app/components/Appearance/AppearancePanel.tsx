@@ -429,9 +429,13 @@ export const AppearancePanel = (props: {
       <aside
         className={`ap ${props.isOpen ? "open" : ""}`}
         aria-label="Настройки вида"
+        // Закрытая панель не должна попадать в дерево доступности:
+        // inert убирает её и из обхода клавиатурой, и из озвучки.
+        // В атрибут пишем пустую строку, иначе React ругается на boolean.
+        {...({ inert: props.isOpen ? undefined : "" } as any)}
       >
         <div className="mb-head">
-          <h3>Вид</h3>
+          <h2>Вид</h2>
           <button
             type="button"
             className="mb-close"
