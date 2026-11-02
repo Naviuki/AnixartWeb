@@ -272,16 +272,24 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
             type="color"
             value={normalizeHex(appearance.acc) || ACCENTS[0]}
             onChange={(event) => {
-              // change приходит при отпускании маркера: это единственный момент сохранения
-              commitAccent(event.target.value);
-            }}
-            onInput={(event) => {
-              // Перетаскивание маркера: только предпросмотр, без записи в список цветов
-              previewAccent(event.currentTarget.value);
+              // Для input[type=color] React зовёт onChange и на input (перетаскивание),
+              // и на change (отпустил маркер). Сохраняем только на change — поэтому
+              // смотрим на тип нативного события, а не на то, что пришёл onChange.
+              const native = event.nativeEvent.type;
+              if (native === "input") {
+                previewAccent(event.currentTarget.value);
+                return;
+              }
+              commitAccent(event.currentTarget.value);
             }}
             onBlur={(event) => {
-              // Пикер закрыли: сохраняем то, на чём остановились, или возвращаем текущий цвет
-              endPreview(event.currentTarget.value);
+              // Пикер закрыли, не отпустив маркер (клавиатура, крестик): фиксируем цвет
+              if (
+                normalizeHex(event.currentTarget.value) !==
+                normalizeHex(appearance.acc)
+              ) {
+                endPreview(event.currentTarget.value);
+              }
             }}
             aria-label="Выбрать любой акцентный цвет"
           />
