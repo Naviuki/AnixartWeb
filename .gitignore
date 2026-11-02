@@ -63,3 +63,6 @@ public/_next-video
 API-Trace/*
 .env
 certificates
+# Снимки и артефакты проверки
+.shots
+

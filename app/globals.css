@@ -495,9 +495,71 @@ body[data-layout="dock"] .nav-item.active .nav-label {
 .mnav {
   display: none;
 }
+
+/* Мобильная шапка: на десктопе её нет */
+.mhead {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   /* Планшет и телефон: боковое меню превращается в нижнюю панель */
   .nav {
+    display: none;
+  }
+  .mhead {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    padding: 10px clamp(14px, 3vw, 24px);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    border-bottom: 1px solid var(--bd);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .mhead-ava {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    flex: none;
+    background: var(--acc);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .mhead-ava img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .mhead-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--t1);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: auto;
+  }
+  .mhead-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: var(--s2);
+    border: 1px solid var(--bd);
+    color: var(--t2);
+    flex: none;
+  }
+  /* Шапка уже содержит поиск и меню, поэтому верхняя строка с «Вид» не нужна */
+  .top .view-btn {
     display: none;
   }
   .mnav {
@@ -532,8 +594,13 @@ body[data-layout="dock"] .nav-item.active .nav-label {
   .mnav-item.active {
     color: var(--acc);
   }
-  .app {
+  /* На телефоне в сетке один столбец: правило должно перебивать data-layout */
+  body[data-layout] .app {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .app-main {
+    width: 100%;
+    overflow-x: clip;
   }
   .main {
     padding-bottom: 96px;
@@ -596,6 +663,10 @@ body[data-layout="dock"] .nav-item.active .nav-label {
   /* Плавающая кнопка плавно поднимается над панелью */
   .fab {
     bottom: calc(78px + env(safe-area-inset-bottom));
+  }
+  /* До 1024 «Вид» доступен из меню шапки, плавающая кнопка перекрывала карточки */
+  .fab {
+    display: none;
   }
   body[data-layout="dock"] .fab {
     bottom: calc(92px + env(safe-area-inset-bottom));
@@ -2425,7 +2496,9 @@ body[data-card="list"] .railrow {
 }
 @media (max-width: 760px) {
   .ftool {
-    bottom: 86px;
+    /* Действия страницы — над нижней панелью */
+    right: 12px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
   }
 }
 
@@ -2848,8 +2921,13 @@ body[data-card="icon"] {
 /* Плавающая панель не перекрывает нижнее меню */
 @media (max-width: 760px) {
   .ftool {
-    right: 72px;
-    bottom: 74px;
+    /* Действия страницы — над нижней панелью и левее плавающей кнопки */
+    right: 12px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+  }
+  /* На телефоне «Вид» открывается из меню, плавающая кнопка перекрывала действия */
+  .fab {
+    display: none;
   }
 }
 

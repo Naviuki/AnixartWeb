@@ -10,7 +10,7 @@ import { Bounce, ToastContainer } from "react-toastify";
 import { SettingsModal } from "./components/SettingsModal/SettingsModal";
 import { AppearanceProvider } from "./components/Appearance/AppearanceProvider";
 import { AppearancePanel } from "./components/Appearance/AppearancePanel";
-import { Navigation } from "./components/Navigation/Navigation";
+import { Navigation, MobileHeader } from "./components/Navigation/Navigation";
 import { Icon } from "./components/Icon/Icon";
 import { NotificationsBridge } from "./components/Notifications/NotificationsBridge";
 
@@ -85,6 +85,7 @@ export const App = (props) => {
             onOpenAppearance={() => setIsAppearanceOpen(true)}
           />
           <div className="app-main">
+            <MobileHeader />
             <main className="main">
               <div className="top">
                 <input
@@ -110,9 +111,7 @@ export const App = (props) => {
               {props.children}
             </main>
           </div>
-        </div>
-
-        <button
+        </div>        <button
           type="button"
           className="fab"
           onClick={() => setIsAppearanceOpen(true)}

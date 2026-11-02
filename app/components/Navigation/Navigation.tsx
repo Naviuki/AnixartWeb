@@ -2,9 +2,21 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { create } from "zustand";
 import { useUserStore } from "#/store/auth";
 import { usePreferencesStore } from "#/store/preferences";
 import { Icon } from "#/components/Icon/Icon";
+
+// Состояние мобильного меню общее для шапки и нижней панели
+const useMobileMenuStore = create<{
+  isOpen: boolean;
+  open: () => void;
+  close: () => void;
+}>((set) => ({
+  isOpen: false,
+  open: () => set({ isOpen: true }),
+  close: () => set({ isOpen: false }),
+}));
 
 type NavId = "home" | "disc" | "search" | "book" | "fav" | "coll" | "hist";
 
@@ -78,6 +90,81 @@ const ALL_PAGES = [
   { icon: "info", title: "О приложении", href: "/about" },
 ];
 
+// Заголовок для мобильной шапки: как на макетах — где сейчас человек
+const titleOf = (
+  pathname: string,
+  userLogin: string | undefined,
+  active: NavId | null,
+  items: typeof NAV_ITEMS
+) => {
+  if (pathname.startsWith("/release/")) return "Тайтл";
+  if (pathname.startsWith("/related/")) return "Франшиза";
+  if (pathname.startsWith("/profile")) return userLogin || "Профиль";
+  if (pathname === "/collections" || pathname.startsWith("/collection"))
+    return "Коллекции";
+  if (pathname.startsWith("/discovery")) return "Обзор";
+  if (pathname.startsWith("/search")) return "Поиск";
+  if (pathname.startsWith("/bookmarks")) return "Закладки";
+  if (pathname.startsWith("/favorites")) return "Избранное";
+  if (pathname.startsWith("/history")) return "История";
+  if (pathname.startsWith("/notifications")) return "Уведомления";
+  if (pathname.startsWith("/about")) return "О приложении";
+  if (pathname.startsWith("/login")) return "Вход";
+  const match = items.find((item) => item.id === active);
+  return match ? match.title : "Главная";
+};
+
+// Мобильная шапка: аватар, где ты сейчас, и кнопка меню. На десктопе скрыта.
+// Меню открывает кнопка, пришедшая из Navigation, чтобы не дублировать разметку.
+export const MobileHeader = () => {
+  const pathname = usePathname() || "/";
+  const isAuth = useUserStore((state) => state.isAuth);
+  const user = useUserStore((state) => state.user);
+  const appearance = usePreferencesStore((state) => state.appearance);
+
+  const active = sectionOf(pathname);
+  const photo = appearance.photo || (isAuth && user?.avatar) || "";
+  const loginHref = `/login?redirect=${encodeURIComponent(pathname)}`;
+  const profileHref = isAuth && user?.id ? `/profile/${user.id}` : loginHref;
+
+  return (
+    <header className="mhead">
+      <Link
+        href={profileHref}
+        className="mhead-ava"
+        aria-label={isAuth && user?.login ? user.login : "Войти"}
+      >
+        {photo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo} alt="" />
+        ) : (
+          "А"
+        )}
+      </Link>
+      <span className="mhead-title">
+        <span className="sr-only">Раздел: </span>
+        {titleOf(pathname, user?.login, active, NAV_ITEMS)}
+      </span>
+      <MobileMenuButton />
+    </header>
+  );
+};
+
+// Кнопка меню шапки. Открывает то же меню, что и «Ещё» в нижней панели.
+const MobileMenuButton = () => {
+  const openMenu = useMobileMenuStore((state) => state.open);
+  return (
+    <button
+      type="button"
+      className="mhead-btn"
+      onClick={openMenu}
+      aria-label="Меню"
+    >
+      <Icon name="layers" size={18} />
+    </button>
+  );
+};
+
 export const Navigation = (props: {
   setIsSettingModalOpen: (value: boolean) => void;
   onOpenAppearance: () => void;
@@ -89,7 +176,9 @@ export const Navigation = (props: {
   const logout = useUserStore((state) => state.logout);
   const appearance = usePreferencesStore((state) => state.appearance);
   const [pagesOpen, setPagesOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
+  const moreOpen = useMobileMenuStore((state) => state.isOpen);
+  const setMoreOpen = (value: boolean) =>
+    value ? useMobileMenuStore.getState().open() : useMobileMenuStore.getState().close();
 
   const active = sectionOf(pathname);
   const photo = appearance.photo || (isAuth && user?.avatar) || "";
@@ -174,8 +263,7 @@ export const Navigation = (props: {
         )}
       </nav>
 
-      <nav className="mnav" aria-label="Мобильное меню">
-        {items
+      <nav className="mnav" aria-label="Мобильное меню">        {items
           .filter((item) => ["home", "disc", "search", "book"].includes(item.id))
           .map((item) => (
             <Link
