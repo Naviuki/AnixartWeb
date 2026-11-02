@@ -57,7 +57,6 @@ const PlaybackRateMenu = (props: {
 }) => {
   return (
     <MediaChromeMenu slot="submenu" hidden>
-      <div slot="title">Скорость воспроизведения</div>
       {RATES.map((rate) => (
         <MediaChromeMenuItem
           key={`rate_${rate}`}
@@ -516,9 +515,6 @@ export const ReleasePlayerCustom = (props: {
             </MediaSettingsMenuItem>
             <MediaSettingsMenuItem
               className={`${Styles["media-settings-menu-item"]} ${Styles["quality-settings"]}`}
-              // Скрытое пункты меню ломают навигацию с клавиатуры и озвучку,
-              // поэтому без доступных качеств пункт убирается из меню совсем
-              style={hasRenditions ? undefined : { display: "none" }}
             >
               Качество
               <MediaRenditionMenu slot="submenu" hidden>

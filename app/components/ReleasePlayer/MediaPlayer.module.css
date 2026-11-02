@@ -233,11 +233,6 @@
   display: none;
 }
 
-/* Пункт «Качество» скрывает сам компонент, когда вариантов нет */
-.quality-settings[submenusize="0"] {
-  display: none;
-}
-
 @keyframes bounce-scale-play {
   0% {
     transform: scale(0.75, 0.75);
