@@ -41,11 +41,12 @@ export const accentInk = (accent: string) => {
   return dark >= white ? "#0a0b10" : "#ffffff";
 };
 
-// Акцент для текста на тёмных поверхностях: исходный цвет осветляется,
-// пока не наберёт 4.5:1 к фону темы (обычная ссылка с цветом акцента)
+// Акцент для текста на поверхностях темы: цвет подтягивается, пока не наберёт
+// 4.5:1 к фону. На тёмном фоне акцент светлеет, на светлом — темнеет.
 export const accentText = (accent: string, background: string) => {
   const target = 4.5;
-  if (contrastRatio(accent, background) >= target) return accent;
+  const base = contrastRatio(accent, background);
+  if (base >= target) return accent;
 
   const { r, g, b } = hexToRgb(accent);
   const toHex = (v: number) =>
@@ -53,13 +54,17 @@ export const accentText = (accent: string, background: string) => {
       .toString(16)
       .padStart(2, "0");
 
-  // Идём к белому: для тёмного фона это всегда повышает контраст
+  const bgLum = relativeLuminance(hexToRgb(background));
+  // Идём к белому на тёмном фоне и к чёрному на светлом
+  const target255 = bgLum < 0.5 ? 255 : 0;
+  const mix = (from: number, to: number, k: number) => from + (to - from) * k;
+
   for (let step = 1; step <= 20; step++) {
     const k = step / 20;
-    const candidate = `#${toHex(r + (255 - r) * k)}${toHex(g + (255 - g) * k)}${toHex(
-      b + (255 - b) * k
-    )}`;
+    const candidate = `#${toHex(mix(r, target255, k))}${toHex(
+      mix(g, target255, k)
+    )}${toHex(mix(b, target255, k))}`;
     if (contrastRatio(candidate, background) >= target) return candidate;
   }
-  return "#ffffff";
+  return bgLum < 0.5 ? "#ffffff" : "#000000";
 };
