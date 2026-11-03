@@ -61,8 +61,7 @@ export const CropModal: React.FC<CropModalProps> = ({
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Обрезка изображения"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) {

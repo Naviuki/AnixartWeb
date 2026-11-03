@@ -42,8 +42,7 @@ export const PopularModal = ({ isOpen, setIsOpen }: ModalProps) => {
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Популярное"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) setIsOpen(false);

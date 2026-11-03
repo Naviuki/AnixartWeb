@@ -36,8 +36,7 @@ export const FiltersTypesModal = ({
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Типы релизов"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) setIsOpen(false);

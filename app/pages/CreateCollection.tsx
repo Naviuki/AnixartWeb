@@ -568,8 +568,7 @@ export const ReleasesEditModal = (props: {
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Новая коллекция"
       aria-modal="true"
       onClick={(e) => {
         if (e.target === e.currentTarget) props.setIsOpen(false);

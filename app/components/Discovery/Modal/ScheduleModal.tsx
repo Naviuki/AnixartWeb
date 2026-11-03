@@ -26,8 +26,7 @@ export const ScheduleModal = ({ isOpen, setIsOpen }: ModalProps) => {
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Расписание"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) setIsOpen(false);

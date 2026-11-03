@@ -70,14 +70,19 @@ const PARSER_URL =
   process.env.NEXT_PUBLIC_PLAYER_PARSER_URL || "http://localhost:7000";
 const PARSER_PORT = Number(new URL(PARSER_URL).port || 7000);
 
-// Парсер с заданным плеером без url отвечает 400 — этого достаточно, чтобы
-// понять, что он жив и слушает порт
+// Парсер с заданным плеером без url отвечает 400 и понятным JSON — этого
+// достаточно, чтобы понять, что он жив, а не просто какой-то чужой порт
 async function isParserUp() {
   try {
     const response = await fetch(PARSER_URL + "/?player=kodik", {
       signal: AbortSignal.timeout(5000),
     });
-    return response.status > 0;
+    if (!response.ok) {
+      // 400 от парсера содержит message про отсутствующий url
+      const text = await response.text();
+      return /url|player|message/i.test(text);
+    }
+    return true;
   } catch {
     return false;
   }
@@ -109,16 +114,29 @@ async function startParser() {
   log("Запускаю парсер плеера на " + PARSER_URL);
   const child = spawn(NPM, ["run", "serve"], {
     cwd: dir,
-    stdio: ["ignore", "pipe", "inherit"],
+    stdio: ["ignore", "pipe", "pipe"],
     shell: IS_WIN,
     env: { ...process.env, PORT: String(PARSER_PORT) },
   });
   child.stdout.on("data", (chunk) =>
     process.stdout.write("[парсер] " + chunk.toString())
   );
+  child.stderr.on("data", (chunk) => {
+    const text = chunk.toString();
+    // Стек трассировки tsx на старте не нужен, только понятные ошибки
+    if (/EADDRINUSE|Error|error/i.test(text)) {
+      process.stderr.write("[парсер] " + text);
+    }
+  });
   children.push(child);
   child.on("exit", (code) => {
-    if (code) err("Парсер плеера остановился (код " + code + ").");
+    if (code) {
+      err(
+        "Парсер плеера остановился (код " +
+          code +
+          "). Встроенный плеер не будет искать источники — перезапустите ярлык «AniX (локально)»."
+      );
+    }
   });
   // Даём парсеру время подняться, но не блокируем сайт
   const startedAt = Date.now();

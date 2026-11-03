@@ -70,16 +70,16 @@ export const ChangelogModal = (props: {
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Список изменений"
       aria-modal="true"
+      aria-labelledby="changelog-title"
       onClick={(event) => {
         if (event.target === event.currentTarget) props.setIsOpen(false);
       }}
     >
       <div className="mb" style={{ width: "min(720px, 100%)" }}>
         <div className="mb-head">
-          <h3>Список изменений v{props.versionResponse.version}</h3>
+          <h3 id="changelog-title">Список изменений v{props.versionResponse.version}</h3>
           <button
             type="button"
             className="mb-close"

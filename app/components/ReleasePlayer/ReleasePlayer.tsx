@@ -46,8 +46,19 @@ function withPlaybackRate(url: string, rate: number): string {
   }
 }
 
-// Скорости, которые показываем в обычном плеере
-const RATE_CHOICES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+// Скорости, которые показываем в обычном плеере.
+// Тот же набор, что в настройках и во встроенном плеере: до 4×.
+const RATE_CHOICES = [
+  0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,
+  4,
+];
+
+// Принимает ли внешний плеер скорость из адреса. Ссылки на видеофайлы
+// (.mp4/.m3u8) браузер воспроизводит сам — там скорость работает.
+const sourceAppliesRate = (name?: string | null) => {
+  if (!name) return false;
+  return /sovet|video|mp4|m3u8/i.test(name);
+};
 
 // localStorage может содержать битый JSON или данные старого формата
 function readWatched(): Record<string, any> {
@@ -478,6 +489,18 @@ export const ReleasePlayer = (props: { id: number }) => {
           ))}
         </Dropdown>
       </div>
+
+      {/* Внешние плееры не принимают скорость: говорим об этом прямо */}
+      {rate !== 1 && !sourceAppliesRate(selectedSource?.name) && (
+        <div className="player-state-note">
+          <Icon name="info" size={16} />
+          <span>
+            Плеер «{selectedSource?.name}» не принимает скорость извне. Скорость
+            {rate}× применится во встроенном плеере — включите «Новый плеер» в
+            настройках.
+          </span>
+        </div>
+      )}
 
       <div className="player-frame">
         {canRenderPlayer && selectedEpisode ?

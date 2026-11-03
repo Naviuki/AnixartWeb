@@ -1,6 +1,7 @@
 import { ReleaseInfoSearchLink } from "#/components/ReleaseInfo/ReleaseInfo.SearchLink";
 import { unixToDate, minutesToTime } from "#/api/utils";
-import { countryFlag, countryLanguage } from "#/api/country";
+import { countryLanguage } from "#/api/country";
+import { CountryFlag } from "#/components/CountryFlag/CountryFlag";
 import { Icon } from "#/components/Icon/Icon";
 
 const weekDay = [
@@ -60,11 +61,11 @@ export const ReleaseInfoInfo = (props: {
         <Cell icon="globe" title="Страна, сезон">
           {props.country ?
             <>
-              {countryFlag(props.country) && (
-                <span className="infocell-flag" aria-hidden="true">
-                  {countryFlag(props.country)}
-                </span>
-              )}
+              <CountryFlag
+                country={props.country}
+                size={18}
+                className="infocell-flag"
+              />
               {props.country}
               {countryLanguage(props.country) && (
                 <span className="infocell-sub">

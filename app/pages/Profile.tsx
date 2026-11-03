@@ -140,7 +140,8 @@ export const ProfilePage = (props: any) => {
             <ProfileActivity
               profile_id={user.id}
               commentCount={user.comment_count}
-              commentPreview={user.release_comments_preview || []}
+              // API отдаёт последние комментарии в comments_preview
+              commentPreview={user.comments_preview || []}
               collectionCount={user.collection_count}
               collectionPreview={user.collections_preview || []}
               friendsCount={user.friend_count}

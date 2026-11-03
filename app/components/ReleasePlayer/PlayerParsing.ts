@@ -43,22 +43,47 @@ export async function _fetchPlayer(
   url: string,
   setPlayerError: (state) => void
 ) {
-  const { data, error } = (await tryCatchPlayer(fetch(url))) as any;
+  let parsed: any;
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    parsed = response.ok ?
+      { data: text ? JSON.parse(text) : null, error: null }
+    : { data: null, error: { message: text ? JSON.parse(text).message : "", code: response.status } };
+  } catch (error: any) {
+    parsed = {
+      data: null,
+      error: {
+        name: error?.name,
+        message:
+          error?.name === "TypeError" ?
+            "ПЛЕЕР_НЕ_ЗАПУЩЕН"
+          : String(error?.message || error),
+      },
+    };
+  }
+
+  const { data, error } = parsed;
   if (error) {
-    // Парсер отвечает 5xx с причиной на русском («SIBNET: страница недоступна»),
-    // сеть — TypeError. Показываем именно это, а не общую фразу.
+    // Парсер отвечает 5xx с причиной на русском («KODIK: …», «SIBNET: …»),
+    // сеть — TypeError. Показываем настоящую причину, а не общую фразу.
     let errorDetail = "Плеер не ответил";
-    if (error.name === "TypeError") {
+    let message = "Не удалось получить ссылку на видео";
+
+    if (error.message === "ПЛЕЕР_НЕ_ЗАПУЩЕН") {
       errorDetail =
         "Локальный парсер источников не запущен. Перезапустите сайт ярлыком «AniX (локально)» — парсер поднимется вместе с ним.";
+    } else if (/^KODIK|^SIBNET|^LIBRIA/i.test(error.message || "")) {
+      // Плеер источника не отдал ссылку: чаще всего видео снято или
+      // провайдер блокирует запросы. Предлагаем проверенный путь.
+      message = "Источник не отдал видео";
+      const source = (error.message.split(":")[0] || "").trim();
+      errorDetail = `${error.message}. Обычно это значит, что видео снято с ${source} или провайдер блокирует запросы; попробуйте другую озвучку или обычный плеер.`;
     } else if (error.message) {
       errorDetail = error.message;
     }
 
-    setPlayerError({
-      message: "Не удалось получить ссылку на видео",
-      detail: errorDetail,
-    });
+    setPlayerError({ message, detail: errorDetail });
     return null;
   }
   return data;

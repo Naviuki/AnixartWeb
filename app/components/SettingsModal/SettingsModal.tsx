@@ -102,8 +102,7 @@ export const SettingsModal = (props: {
 
   return (
     <div
-      className="md"
-      role="dialog"
+      className="md" role="dialog" aria-label="Настройки"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) props.setIsOpen(false);

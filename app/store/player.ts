@@ -78,7 +78,10 @@ export const useUserPlayerPreferencesStore =
           });
         },
         setPlaybackRate: (rate: number) => {
-          set({ playbackRate: rate });
+          // Допустимые скорости — от 0.25 до 4, как в меню плееров
+          const value = Number(rate);
+          if (!Number.isFinite(value) || value <= 0 || value > 4) return;
+          set({ playbackRate: value });
         },
         setRememberPlaybackRate: (remember: boolean) => {
           set({ rememberPlaybackRate: remember });

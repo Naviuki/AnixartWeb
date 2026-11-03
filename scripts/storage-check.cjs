@@ -108,7 +108,10 @@ async function main() {
       const state = await evalJs(`({
         app: Boolean(document.querySelector('.app')),
         textLen: (document.body.innerText || '').trim().length,
-        invalidDate: /Invalid Date|NaN/.test(document.body.innerText || ''),
+        // «Invalid Date» внутри текста журнала изменений — это объяснение, а не дата.
+        // Проверяем только даты, которые выводит сам интерфейс.
+        invalidDate: Array.from(document.querySelectorAll('main time, .row-sub, .comment-date'))
+          .some((el) => /Invalid Date|NaN/.test(el.textContent || '')),
       })`);
       const crashed = !state.app || state.textLen < 40;
       if (crashed || state.invalidDate || errors.length) {
