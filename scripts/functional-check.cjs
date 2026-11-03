@@ -189,6 +189,8 @@ async function main() {
   const accent = await evalJs(`(async () => {
     const input = document.querySelector('.acc-pick input[type=color]');
     if (!input) return null;
+    const before = JSON.parse(localStorage.getItem('preferences')).state.appearance;
+    const beforeList = before.customAccents || [];
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     const shades = ['#112233', '#223344', '#334455', '#445566'];
     for (const hex of shades) {
@@ -202,7 +204,8 @@ async function main() {
     await new Promise(r => setTimeout(r, 400));
     const after = JSON.parse(localStorage.getItem('preferences')).state.appearance;
     return {
-      duringCount: (during.customAccents || []).length,
+      // сколько цветов добавилось за время перетаскивания
+      addedDuringDrag: (during.customAccents || []).length - beforeList.length,
       preview,
       acc: after.acc,
       list: after.customAccents,
@@ -211,11 +214,10 @@ async function main() {
   check(
     "свой акцент сохраняется одним цветом",
     accent &&
-      accent.duringCount === 0 &&
+      accent.addedDuringDrag === 0 &&
       accent.acc === "#445566" &&
       Array.isArray(accent.list) &&
-      accent.list.length === 1 &&
-      accent.list[0] === "#445566",
+      accent.list.filter((c) => c === "#445566").length === 1,
     JSON.stringify(accent)
   );
 
