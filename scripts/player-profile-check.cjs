@@ -39,6 +39,28 @@ async function main() {
     if (r.exceptionDetails) return { __error: String(r.exceptionDetails.exception?.description).slice(0, 200) };
     return r.result?.value;
   };
+  // Настоящий клик мышью: синтетический .click() не всегда открывает меню Flowbite
+  const clickBy = async (finder) => {
+    const point = await evalJs(`(() => {
+      const el = ${finder};
+      if (!el) return null;
+      el.scrollIntoView({ block: 'center' });
+      const r = el.getBoundingClientRect();
+      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+    })()`);
+    if (!point) return false;
+    for (const type of ["mousePressed", "mouseReleased"]) {
+      await send("Input.dispatchMouseEvent", {
+        type, x: point.x, y: point.y, button: "left", clickCount: 1,
+      });
+    }
+    return true;
+  };
+  const clickChip = () =>
+    clickBy(`Array.from(document.querySelectorAll('button')).find(b => /^Скорость:/.test(b.innerText.trim()))`);
+  const clickRateItem = (label) =>
+    clickBy(`Array.from(document.querySelectorAll('[role=menuitem]')).find(x => x.innerText.trim() === ${JSON.stringify(label)})`);
+
   const go = async (route, settle = 4000) => {
     await send("Page.navigate", { url: BASE + route });
     await sleep(800);
@@ -48,6 +70,9 @@ async function main() {
       await sleep(400);
     }
     await sleep(settle);
+    // Журнал изменений перекрывает страницу: закрываем, иначе клик мышью не дойдёт
+    await evalJs(`(() => { const b = document.querySelector('.md .mb-close'); if (b) b.click(); return true; })()`);
+    await sleep(500);
   };
 
   await send("Page.enable");
@@ -63,23 +88,91 @@ async function main() {
     p.state = p.state || {};
     p.state.params = { ...(p.state.params || {}), isFirstLaunch: false, experimental: { newPlayer: false } };
     localStorage.setItem('preferences', JSON.stringify(p));
+    // Замер темпа начинаем с 1×, иначе сравнение с 2.5× ничего не покажет
+    localStorage.setItem('player-preferences', JSON.stringify({ state: { voiceover: {}, player: {}, playbackRate: 1, rememberPlaybackRate: true, version: 1 }, version: 0 }));
     return true;
   })()`);
   await go("/release/18439", 5000);
 
-  const rates = await evalJs(`(async () => {
-    const chip = Array.from(document.querySelectorAll('button')).find(b => /^Скорость:/.test(b.innerText.trim()));
-    if (!chip) return null;
-    chip.click();
-    await new Promise(r => setTimeout(r, 700));
-    return Array.from(document.querySelectorAll('[role=menuitem]'))
-      .map(x => x.innerText.trim()).filter(t => /×$/.test(t));
-  })()`);
+  const ratesOpened = await clickChip();
+  await sleep(700);
+  const rates = await evalJs(`Array.from(document.querySelectorAll('[role=menuitem]'))
+      .map(x => x.innerText.trim()).filter(t => /×$/.test(t))`);
   check(
     "обычный плеер: скорости до 4×",
-    Array.isArray(rates) && rates.includes("2.25×") && rates.includes("4×") && rates.length === 16,
+    ratesOpened && Array.isArray(rates) && rates.includes("2.25×") && rates.includes("4×") && rates.length === 16,
     Array.isArray(rates) ? `${rates.length} вариантов, есть 2.25×: ${rates.includes("2.25×")}` : String(rates)
   );
+
+  // Скорость меняется по-настоящему: клик мышью по меню -> playbackRate и темп
+  // Меню после проверки списка осталось открытым — закрываем повторным кликом
+  await clickChip();
+  await sleep(600);
+
+  // Ждём прямой поток: только в своём <video> скорость реально работает
+  let direct = null;
+  for (let i = 0; i < 30; i++) {
+    direct = await evalJs(`(() => {
+      const v = document.querySelector('.player-frame video');
+      return v
+        ? { native: true, duration: Number(v.duration) || 0, ready: v.readyState }
+        : { native: false, iframe: Boolean(document.querySelector('.player-frame iframe')) };
+    })()`);
+    if (direct && direct.native && direct.duration > 0) break;
+    await sleep(1000);
+  }
+  check(
+    "обычный плеер играет прямой поток своим <video>",
+    direct && direct.native && direct.duration > 0,
+    JSON.stringify(direct)
+  );
+
+  if (direct && direct.native) {
+    // Воспроизводим без звука и замеряем темп на 1×, затем на 2.5×
+    const baseline = await evalJs(`(async () => {
+      const v = document.querySelector('.player-frame video');
+      v.muted = true;
+      try { await v.play(); } catch {}
+      await new Promise(r => setTimeout(r, 1500));
+      const wall = performance.now();
+      const t1 = v.currentTime;
+      await new Promise(r => setTimeout(r, 2500));
+      const elapsed = (performance.now() - wall) / 1000;
+      return {
+        effective: Math.round(((v.currentTime - t1) / elapsed) * 100) / 100,
+        advanced: Math.round((v.currentTime - t1) * 100) / 100,
+        rate: v.playbackRate,
+      };
+    })()`);
+
+    const opened = await clickChip();
+    await sleep(800);
+    const picked = await clickRateItem("2.5×");
+    await sleep(1500);
+
+    const after = await evalJs(`(async () => {
+      const v = document.querySelector('.player-frame video');
+      const wall = performance.now();
+      const t1 = v.currentTime;
+      await new Promise(r => setTimeout(r, 3000));
+      const elapsed = (performance.now() - wall) / 1000;
+      const stored = JSON.parse(localStorage.getItem('player-preferences') || '{}').state?.playbackRate;
+      return {
+        effective: Math.round(((v.currentTime - t1) / elapsed) * 100) / 100,
+        advanced: Math.round((v.currentTime - t1) * 100) / 100,
+        rate: v.playbackRate,
+        stored,
+        chip: (Array.from(document.querySelectorAll('button')).find(b => /^Скорость:/.test(b.innerText.trim())) || {}).innerText,
+      };
+    })()`);
+
+    check(
+      "скорость 2.5× реально ускоряет видео",
+      opened && picked && after && after.rate === 2.5 && after.stored === 2.5 &&
+        after.effective > 1.8 && baseline && baseline.effective < 1.4,
+      JSON.stringify({ baseline, opened, picked, after })
+    );
+  }
 
   // Сохранение скорости выше 2×
   const saved = await evalJs(`(() => {
@@ -98,15 +191,21 @@ async function main() {
     JSON.stringify(applied)
   );
 
-  // Флаг страны в «О тайтле»
+  // Флаг страны в «О тайтле»: он стоит в плашке слева, а не в строке значения
   const flag = await evalJs(`(() => {
-    const svg = document.querySelector('.infocell .infocell-v svg');
-    const rect = svg && svg.getBoundingClientRect();
-    return { exists: Boolean(svg), w: rect && Math.round(rect.width), h: rect && Math.round(rect.height) };
+    const badge = document.querySelector('.infocell .infocell-ic svg');
+    const inValue = document.querySelector('.infocell .infocell-v svg');
+    const rect = badge && badge.getBoundingClientRect();
+    return {
+      inBadge: Boolean(badge),
+      inValue: Boolean(inValue),
+      w: rect && Math.round(rect.width),
+      h: rect && Math.round(rect.height),
+    };
   })()`);
   check(
-    "в «О тайтле» виден флаг (SVG)",
-    flag && flag.exists && flag.w >= 14 && flag.h >= 10,
+    "в «О тайтле» флаг стоит в плашке слева",
+    flag && flag.inBadge && !flag.inValue && flag.w >= 14 && flag.h >= 10,
     JSON.stringify(flag)
   );
 
@@ -139,28 +238,31 @@ async function main() {
     return true;
   })()`);
   await go("/release/18439", 6000);
-  // Ждём, пока плеер получит ответ парсера (успех или понятную ошибку)
+  // Ждём, пока плеер получит ответ парсера: видео или понятную ошибку
   let builtIn = null;
-  for (let i = 0; i < 25; i++) {
+  for (let i = 0; i < 30; i++) {
     builtIn = await evalJs(`(async () => {
       const ctrl = document.querySelector('media-controller');
-      if (!ctrl) return { hasPlayer: false, text: '' };
+      if (!ctrl) return { hasPlayer: false, text: '', playing: false };
       const more = Array.from(document.querySelectorAll('button')).find(b => /Подробнее/.test(b.innerText));
       if (more) { more.click(); await new Promise(r => setTimeout(r, 300)); }
+      const video = ctrl.querySelector('video, hls-video, video-js');
       return {
         hasPlayer: true,
+        video: Boolean(video),
+        duration: video ? Number(video.duration) || 0 : 0,
+        src: video ? String(video.currentSrc || video.src || '').slice(0, 70) : null,
         text: ctrl.innerText.replace(/\\s+/g, ' ').slice(0, 200),
       };
     })()`);
-    if (builtIn && /Источник не отдал видео|KODIK|SIBNET|LIBRIA/.test(builtIn.text)) break;
+    if (builtIn && (builtIn.duration > 0 || /Источник не отдал видео|KODIK|SIBNET|LIBRIA/.test(builtIn.text))) break;
     await sleep(1000);
   }
   check(
-    "встроенный плеер: причина ошибки понятна",
-    builtIn &&
-      builtIn.hasPlayer &&
-      /Источник не отдал видео|KODIK|SIBNET|LIBRIA/.test(builtIn.text),
-    builtIn && builtIn.text
+    "встроенный плеер: играет поток или объясняет отказ",
+    builtIn && builtIn.hasPlayer &&
+      (builtIn.duration > 0 || /Источник не отдал видео|KODIK|SIBNET|LIBRIA/.test(builtIn.text)),
+    JSON.stringify(builtIn && { video: builtIn.video, duration: builtIn.duration, src: builtIn.src, text: builtIn.text })
   );
 
   let parserAlive = false;

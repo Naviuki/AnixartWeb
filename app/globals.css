@@ -2036,11 +2036,6 @@ body[data-card="list"] .railrow {
   font-size: 11px;
   color: var(--t3);
 }
-/* Флаг страны и уточнение языка перед названием */
-.infocell-flag {
-  margin-right: 6px;
-  vertical-align: -2px;
-}
 .infocell-sub {
   color: var(--t2);
 }

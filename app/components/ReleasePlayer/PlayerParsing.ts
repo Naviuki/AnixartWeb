@@ -89,6 +89,53 @@ export async function _fetchPlayer(
   return data;
 }
 
+// Какой обработчик парсера подходит этому плееру. Если ни один — прямую
+// ссылку получить нечем, остаётся iframe источника.
+export const parserPlayerFor = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (/kodikplayer\.com|kodik\.info|aniqit\.com|kodik\.cc|kodik\.biz/i.test(url)) {
+    return "kodik";
+  }
+  if (/sibnet\.ru/i.test(url)) return "sibnet";
+  if (/anilibria|libria\.top|libria\.wtf/i.test(url)) return "libria";
+  return null;
+};
+
+// Манифест может прийти как готовая ссылка или как текст — текст скармливаем
+// плееру через blob.
+const toPlayableUrl = (manifest: string) => {
+  if (!manifest) return null;
+  if (manifest.startsWith("http")) return manifest;
+  return URL.createObjectURL(
+    new File([manifest], "manifest.m3u8", { type: "application/x-mpegURL" })
+  );
+};
+
+// Прямая ссылка на поток для нашего <video>. Ошибку не показываем: обычный
+// плеер просто останется на iframe источника.
+export const _fetchDirectManifest = async (
+  url: string,
+  setPlayerError: (state) => void
+): Promise<{ manifest: string | null; poster: string | null }> => {
+  const player = parserPlayerFor(url);
+  if (!player || !ENV_PLAYER_PARSER_URL) {
+    return { manifest: null, poster: null };
+  }
+
+  const data = await _fetchPlayer(
+    `${ENV_PLAYER_PARSER_URL}/?url=${encodeURIComponent(url)}&player=${player}`,
+    setPlayerError
+  );
+
+  if (data?.manifest) {
+    return {
+      manifest: toPlayableUrl(data.manifest),
+      poster: data.poster || null,
+    };
+  }
+  return { manifest: null, poster: null };
+};
+
 export const _fetchKodikManifest = async (
   url: string,
   setPlayerError: (state) => void
@@ -101,11 +148,8 @@ export const _fetchKodikManifest = async (
     return { manifest: null, poster: null };
   }
 
-  // Сервер принимает домены kodik.info и kodik.cc, поэтому kodikplayer.com переводится сам
-  const parserUrl = url.replace(/kodikplayer\.com/, "kodik.info");
-
   const data = await _fetchPlayer(
-    `${ENV_PLAYER_PARSER_URL}/?url=${encodeURIComponent(parserUrl)}&player=kodik`,
+    `${ENV_PLAYER_PARSER_URL}/?url=${encodeURIComponent(url)}&player=kodik`,
     setPlayerError
   );
 
@@ -162,7 +206,7 @@ export const _fetchSibnetManifest = async (
   }
 
   const data = await _fetchPlayer(
-    `${ENV_PLAYER_PARSER_URL}/?url=${url}&player=sibnet`,
+    `${ENV_PLAYER_PARSER_URL}/?url=${encodeURIComponent(url)}&player=sibnet`,
     setPlayerError
   );
 

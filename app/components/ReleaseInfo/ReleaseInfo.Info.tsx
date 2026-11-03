@@ -1,6 +1,7 @@
 import { ReleaseInfoSearchLink } from "#/components/ReleaseInfo/ReleaseInfo.SearchLink";
 import { unixToDate, minutesToTime } from "#/api/utils";
 import { countryLanguage } from "#/api/country";
+import { hasCountryFlag } from "#/api/countryFlags";
 import { CountryFlag } from "#/components/CountryFlag/CountryFlag";
 import { Icon } from "#/components/Icon/Icon";
 
@@ -17,14 +18,17 @@ const weekDay = [
 const YearSeason = ["_", "Зима", "Весна", "Лето", "Осень"];
 
 const Cell = (props: {
-  icon: string;
+  icon?: string;
+  // Флаг страны показывается вместо иконки — там же, где был значок раздела
+  badge?: React.ReactNode;
   title: string;
   children: React.ReactNode;
 }) => {
   return (
     <div className="infocell">
       <span className="infocell-ic">
-        <Icon name={props.icon} size={17} />
+        {props.badge ??
+          (props.icon ? <Icon name={props.icon} size={17} /> : null)}
       </span>
       <div style={{ minWidth: 0 }}>
         <div className="infocell-k">{props.title}</div>
@@ -58,14 +62,17 @@ export const ReleaseInfoInfo = (props: {
       <h3 style={{ marginBottom: 14 }}>О тайтле</h3>
 
       <div className="infogrid">
-        <Cell icon="globe" title="Страна, сезон">
+        <Cell
+          icon="globe"
+          badge={
+            hasCountryFlag(props.country) ?
+              <CountryFlag country={props.country} size={22} />
+            : undefined
+          }
+          title="Страна, сезон"
+        >
           {props.country ?
             <>
-              <CountryFlag
-                country={props.country}
-                size={18}
-                className="infocell-flag"
-              />
               {props.country}
               {countryLanguage(props.country) && (
                 <span className="infocell-sub">
