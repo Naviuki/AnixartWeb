@@ -47,11 +47,20 @@ export const DEFAULT_APPEARANCE: Appearance = {
 };
 
 // Безопасная запись в localStorage: приватный режим и квоты не должны ломать приложение
+// Испорченный JSON (обрыв записи, старое расширение) читается как «нет данных»
 const safeStorage = {
   getItem: (name: string) => {
     try {
-      return localStorage.getItem(name);
+      const raw = localStorage.getItem(name);
+      if (raw == null) return null;
+      JSON.parse(raw);
+      return raw;
     } catch {
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        /* запись недоступна */
+      }
       return null;
     }
   },
@@ -157,10 +166,19 @@ export const usePreferencesStore = create<preferencesState>()(
       },
       setAppearance(patch) {
         const current = get().appearance;
+        // Акцент принимаем только в виде HEX: иначе CSS-переменная окажется мусором
+        const acc =
+          typeof patch.acc === "string" && /^#[0-9a-fA-F]{3,8}$/.test(patch.acc) ?
+            patch.acc.toLowerCase()
+          : current.acc;
         set({
           appearance: {
             ...current,
             ...patch,
+            acc,
+            customAccents: Array.isArray(patch.customAccents) ?
+              patch.customAccents
+            : current.customAccents,
             sec: { ...current.sec, ...(patch.sec || {}) },
             nav: { ...current.nav, ...(patch.nav || {}) },
           },
@@ -193,10 +211,32 @@ export const usePreferencesStore = create<preferencesState>()(
         return () => state.setHasHydrated(true);
       },
       merge: (persistedState, currentState) => {
-        return deepmerge(
-          currentState as preferencesState,
-          persistedState as preferencesState
-        );
+        // Испорченное хранилище не должно ломать приложение: берём состояние по умолчанию
+        if (!persistedState || typeof persistedState !== "object") {
+          return currentState;
+        }
+        try {
+          const merged = deepmerge(
+            currentState as preferencesState,
+            persistedState as preferencesState
+          );
+          // Настройки вида могут прийти частично битыми — приводим к рабочим значениям
+          const appearance = (merged.appearance || {}) as Appearance;
+          merged.appearance = {
+            ...DEFAULT_APPEARANCE,
+            ...appearance,
+            customAccents: Array.isArray(appearance.customAccents) ?
+              appearance.customAccents.filter(
+                (item) => typeof item === "string" && /^#[0-9a-fA-F]{3,8}$/.test(item)
+              )
+            : [],
+            sec: { ...DEFAULT_APPEARANCE.sec, ...(appearance.sec || {}) },
+            nav: { ...DEFAULT_APPEARANCE.nav, ...(appearance.nav || {}) },
+          };
+          return merged;
+        } catch {
+          return currentState;
+        }
       },
       version: 2,
     },

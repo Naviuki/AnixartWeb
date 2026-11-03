@@ -85,7 +85,10 @@ export function buildRemotePayload() {
 
 export async function checkSeasonNotices(): Promise<SeasonNotice[]> {
   const store = useNotificationsStore.getState();
-  const subs = Object.entries(store.subs).slice(0, MAX_SUBSCRIPTIONS);
+  const subs = Object.entries(store.subs || {})
+    // Битые подписки (например, старый формат) проверять нельзя
+    .filter(([, sub]) => sub && typeof sub === "object")
+    .slice(0, MAX_SUBSCRIPTIONS);
   if (!subs.length) return [];
 
   const found: SeasonNotice[] = [];
@@ -168,7 +171,7 @@ export async function autosubscribeTitles(
 
 export function shouldCheckNow() {
   const { lastCheck, subs } = useNotificationsStore.getState();
-  if (!Object.keys(subs).length) return false;
+  if (!Object.keys(subs || {}).length) return false;
   return Date.now() - (lastCheck || 0) > MIN_CHECK_INTERVAL;
 }
 

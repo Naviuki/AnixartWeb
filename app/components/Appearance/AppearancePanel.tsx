@@ -1,7 +1,7 @@
 "use client";
 
 // Панель вида содержит только контролы, поэтому её используют и во вкладке настроек
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { DEFAULT_APPEARANCE, usePreferencesStore } from "#/store/preferences";
 import { Icon } from "#/components/Icon/Icon";
 
@@ -82,6 +82,9 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
 
   const customAccents = appearance.customAccents || [];
 
+  // Текущий акцент в виде #rrggbb — начальное значение поля выбора цвета
+  const accentValue = normalizeHex(appearance.acc) || ACCENTS[0];
+
   // Замыкания в обработчиках держат старые данные, поэтому пишем через ref
   const commitRef = useRef(
     (color: string, final: boolean) => {
@@ -110,8 +113,38 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
     if (!hex) return;
     document.body.style.setProperty("--acc", hex);
   };
+
+  // Поле цвета слушаем нативно.
+  // React для input[type=color] доставляет change только если его внутренний
+  // трекер значения ещё не обновлён, и цвет пользователя терялся. Нативные
+  // слушатели ловят событие всегда, поэтому выбор сохраняется надёжно.
+  const accentInputRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    const input = accentInputRef.current;
+    if (!input) return;
+
+    const onInput = () => previewAccent(input.value);
+    const onChange = () => commitRef.current(input.value, true);
+    const onBlur = () => {
+      // Пикер закрыли, не отпустив маркер (клавиатура, крестик)
+      const picked = normalizeHex(input.value);
+      if (picked && picked !== normalizeHex(appearance.acc)) {
+        commitRef.current(picked, true);
+      }
+    };
+
+    input.addEventListener("input", onInput);
+    input.addEventListener("change", onChange);
+    input.addEventListener("blur", onBlur);
+    return () => {
+      input.removeEventListener("input", onInput);
+      input.removeEventListener("change", onChange);
+      input.removeEventListener("blur", onBlur);
+    };
+    // appearance.acc читается в обработчике, чтобы сравнение было свежим
+  }, [appearance.acc]);
+
   // Сохраняем ровно один цвет, когда пользователь отпустил пикер или закрыл его.
-  // Если браузер не прислал change, берём текущее значение из элемента.
   const commitAccent = (color: string) => {
     commitRef.current(color, true);
   };
@@ -268,29 +301,16 @@ export const AppearanceControls = (props: { compact?: boolean }) => {
         )}
 
         <label className="acc-pick">
+          {/*
+            Поле цвета неуправляемое (без value): если отдавать value из стора,
+            React возвращает старое значение на каждое событие input, и браузер
+            отдаёт в change уже сброшенный цвет — выбор пользователя терялся.
+            Начальное значение задаётся ключом, остальное живёт в DOM.
+          */}
           <input
+            ref={accentInputRef}
             type="color"
-            value={normalizeHex(appearance.acc) || ACCENTS[0]}
-            onChange={(event) => {
-              // Для input[type=color] React зовёт onChange и на input (перетаскивание),
-              // и на change (отпустил маркер). Сохраняем только на change — поэтому
-              // смотрим на тип нативного события, а не на то, что пришёл onChange.
-              const native = event.nativeEvent.type;
-              if (native === "input") {
-                previewAccent(event.currentTarget.value);
-                return;
-              }
-              commitAccent(event.currentTarget.value);
-            }}
-            onBlur={(event) => {
-              // Пикер закрыли, не отпустив маркер (клавиатура, крестик): фиксируем цвет
-              if (
-                normalizeHex(event.currentTarget.value) !==
-                normalizeHex(appearance.acc)
-              ) {
-                endPreview(event.currentTarget.value);
-              }
-            }}
+            defaultValue={accentValue}
             aria-label="Выбрать любой акцентный цвет"
           />
           <span>Выбрать свой цвет</span>

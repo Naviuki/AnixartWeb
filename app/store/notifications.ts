@@ -47,8 +47,17 @@ interface notificationsState {
 const safeStorage = {
   getItem: (name: string) => {
     try {
-      return localStorage.getItem(name);
+      const raw = localStorage.getItem(name);
+      if (raw == null) return null;
+      // Испорченный JSON считается отсутствующим хранилищем
+      JSON.parse(raw);
+      return raw;
     } catch {
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        /* запись недоступна */
+      }
       return null;
     }
   },
@@ -66,6 +75,41 @@ const safeStorage = {
       /* запись недоступна */
     }
   },
+};
+
+// Хранилище подписок может содержать записи старого или битого формата:
+// такую подписку нельзя показывать, но и падать из-за неё страница не должна
+const sanitizeSubs = (
+  value: unknown
+): Record<number, SeasonSubscription> => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const result: Record<number, SeasonSubscription> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, any>)) {
+    if (!raw || typeof raw !== "object") continue;
+    const since = Number(raw.since);
+    if (!Number.isFinite(since)) continue;
+    const title =
+      typeof raw.title === "string" && raw.title.trim() ?
+        raw.title.trim()
+      : `Тайтл ${key}`;
+    const relatedId = Number(raw.relatedId);
+    const count = Number(raw.lastRelatedCount);
+    result[Number(key)] = {
+      title,
+      poster: typeof raw.poster === "string" ? raw.poster : undefined,
+      relatedId: Number.isFinite(relatedId) ? relatedId : undefined,
+      since,
+      lastRelatedCount: Number.isFinite(count) ? count : 0,
+    };
+  }
+  return result;
+};
+
+// Дата подписки для списка: битые значения не должны ломать разметку
+export const formatSince = (since: number) => {
+  const date = new Date(since);
+  if (Number.isNaN(date.getTime())) return "дата неизвестна";
+  return `С ${date.toLocaleDateString("ru-RU")}`;
 };
 
 export const useNotificationsStore = create<notificationsState>()(
@@ -98,7 +142,7 @@ export const useNotificationsStore = create<notificationsState>()(
       },
       isSubscribed: (key) => Boolean(get().subs[key]),
       addNotices: (items) => {
-        if (!items.length) return;
+        if (!Array.isArray(items) || !items.length) return;
         const known = new Set(
           get().notices.map((item) => `${item.releaseId}_${item.relatedId}`)
         );
@@ -112,7 +156,7 @@ export const useNotificationsStore = create<notificationsState>()(
         set({ lastCheck: Date.now() });
       },
       hydrate: (subs) => {
-        set({ subs });
+        set({ subs: sanitizeSubs(subs) });
       },
       clearAll: () => {
         set({ subs: {}, notices: [], lastCheck: 0 });
@@ -130,8 +174,14 @@ export const useNotificationsStore = create<notificationsState>()(
             currentState as notificationsState,
             persistedState as notificationsState
           );
-          if (!merged.subs || typeof merged.subs !== "object") merged.subs = {};
-          if (!Array.isArray(merged.notices)) merged.notices = [];
+          // Битые и неполные подписки выбрасываются при загрузке хранилища
+          merged.subs = sanitizeSubs(merged.subs);
+          merged.notices = Array.isArray(merged.notices) ?
+            merged.notices.filter((item) => item && typeof item === "object")
+          : [];
+          merged.lastCheck = Number.isFinite(Number(merged.lastCheck)) ?
+            Number(merged.lastCheck)
+          : 0;
           return merged;
         } catch {
           return currentState;

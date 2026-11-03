@@ -185,6 +185,40 @@ async function main() {
   );
   check("скругление применяется", appearance && appearance.radius === "4px", appearance && appearance.radius);
 
+  // 3.1 Свой акцент: перетаскивание не копит цвета, отпускание сохраняет один
+  const accent = await evalJs(`(async () => {
+    const input = document.querySelector('.acc-pick input[type=color]');
+    if (!input) return null;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    const shades = ['#112233', '#223344', '#334455', '#445566'];
+    for (const hex of shades) {
+      setter.call(input, hex);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+    }
+    const during = JSON.parse(localStorage.getItem('preferences')).state.appearance;
+    const preview = getComputedStyle(document.body).getPropertyValue('--acc').trim();
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 400));
+    const after = JSON.parse(localStorage.getItem('preferences')).state.appearance;
+    return {
+      duringCount: (during.customAccents || []).length,
+      preview,
+      acc: after.acc,
+      list: after.customAccents,
+    };
+  })()`);
+  check(
+    "свой акцент сохраняется одним цветом",
+    accent &&
+      accent.duringCount === 0 &&
+      accent.acc === "#445566" &&
+      Array.isArray(accent.list) &&
+      accent.list.length === 1 &&
+      accent.list[0] === "#445566",
+    JSON.stringify(accent)
+  );
+
   // 4. Заголовки h1/h2 присутствуют и в правильном порядке
   const headings = await evalJs(`(async () => {
     const hs = Array.from(document.querySelectorAll('h1,h2,h3')).map(h => ({ t: h.tagName, x: (h.innerText||'').trim().slice(0,30) }));

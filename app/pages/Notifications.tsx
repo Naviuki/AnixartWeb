@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PageHead } from "#/components/PageHead/PageHead";
 import { Icon } from "#/components/Icon/Icon";
-import { useNotificationsStore } from "#/store/notifications";
+import { useNotificationsStore, formatSince } from "#/store/notifications";
 import {
   checkSeasonNotices,
   shouldCheckNow,
@@ -17,7 +17,10 @@ export const NotificationsPage = () => {
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState("");
 
-  const list = Object.entries(subs).sort((a, b) => b[1].since - a[1].since);
+  const list = Object.entries(subs || {})
+    // Записи без даты пропускаем: они не могут быть показаны и ломали сортировку
+    .filter(([, sub]) => sub && Number.isFinite(Number(sub.since)))
+    .sort((a, b) => Number(b[1].since) - Number(a[1].since));
 
   async function check(manual: boolean) {
     setChecking(true);
@@ -135,9 +138,7 @@ export const NotificationsPage = () => {
                   className="row-body"
                 >
                   <span className="row-title">{sub.title}</span>
-                  <span className="row-sub">
-                    С {new Date(sub.since).toLocaleDateString("ru-RU")}
-                  </span>
+                  <span className="row-sub">{formatSince(sub.since)}</span>
                 </Link>
                 <Link
                   href={`/related/${sub.relatedId || id}`}

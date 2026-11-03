@@ -26,8 +26,17 @@ interface userPlayerPreferencesState {
 const safeStorage = {
   getItem: (name: string) => {
     try {
-      return localStorage.getItem(name);
+      const raw = localStorage.getItem(name);
+      if (raw == null) return null;
+      // Испорченный JSON считается отсутствующим хранилищем
+      JSON.parse(raw);
+      return raw;
     } catch {
+      try {
+        localStorage.removeItem(name);
+      } catch {
+        /* запись недоступна */
+      }
       return null;
     }
   },
