@@ -11,6 +11,7 @@ const BASE = process.env.ANIX_URL || "http://localhost:3000";
 const [route = "/", selector = ".infogrid", out = ".shots/clip.png", scale = "3"] =
   process.argv.slice(2);
 const PORT = 9350;
+const VIEWPORT_WIDTH = Number(process.env.ANIX_WIDTH || 1440);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 (async () => {
@@ -66,10 +67,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   await send("Page.enable");
   await send("Emulation.setDeviceMetricsOverride", {
-    width: 1440,
+    width: VIEWPORT_WIDTH,
     height: 900,
     deviceScaleFactor: 1,
-    mobile: false,
+    mobile: VIEWPORT_WIDTH < 600,
   });
   await send("Page.navigate", { url: BASE + route });
   await sleep(1500);
