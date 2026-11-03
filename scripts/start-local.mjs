@@ -74,12 +74,16 @@ const PARSER_PORT = Number(new URL(PARSER_URL).port || 7000);
 // достаточно, чтобы понять, что он жив, а не просто какой-то чужой порт
 async function isParserUp() {
   try {
-    const response = await fetch(PARSER_URL + "/?player=kodik", {
+    const response = await fetch(PARSER_URL + "/health", {
       signal: AbortSignal.timeout(5000),
     });
-    if (!response.ok) {
-      // 400 от парсера содержит message про отсутствующий url
-      const text = await response.text();
+    if (response.ok) return true;
+    // Старые версии парсера (/health ещё нет) отвечают 400 на пустой запрос
+    const fallback = await fetch(PARSER_URL + "/?player=kodik", {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!fallback.ok) {
+      const text = await fallback.text();
       return /url|player|message/i.test(text);
     }
     return true;
@@ -89,6 +93,7 @@ async function isParserUp() {
 }
 
 function findParserDir() {
+  // Сначала парсер внутри проекта, затем соседний клон (старая раскладка)
   const candidates = [
     process.env.ANIX_PARSER_DIR,
     join(ROOT, "player-parser"),
@@ -171,18 +176,29 @@ function killTree(child, code) {
 
 // Дочерние процессы, которые нужно гасить вместе со скриптом
 const children = [];
-function shutdown(code) {
-  for (const child of children) {
-    if (!child.pid || child.killed) continue;
-    if (IS_WIN) {
-      spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
-        stdio: "ignore",
-      });
-    } else {
-      child.kill("SIGTERM");
-    }
+// Закрывать по-хорошему: на Windows окно консоли закрывается как раз тогда,
+// когда парсеру нужно убраться и освободить порт
+function terminate(child) {
+  if (!child.pid || child.killed) return;
+  if (IS_WIN) {
+    spawnSync("taskkill", ["/pid", String(child.pid), "/t"], { stdio: "ignore" });
+  } else {
+    child.kill("SIGTERM");
   }
-  process.exit(code);
+}
+function shutdown(code) {
+  for (const child of children) terminate(child);
+  setTimeout(() => {
+    for (const child of children) {
+      if (IS_WIN && child.pid) {
+        spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+          stdio: "ignore",
+        });
+      }
+    }
+    process.exit(code);
+  }, 4000).unref();
+  setTimeout(() => process.exit(code), 4500).unref();
 }
 
 async function main() {

@@ -47,6 +47,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# парсер плеера (player-parser) — отдельный мини-сервис
+player-parser/node_modules
+
 # traefik
 traefik/traefik
 
