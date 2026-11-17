@@ -23,6 +23,7 @@ interface EpisodeSelectorMenuProps {
   episode: Episode;
   episodeList: Episode[];
   setPlayerError: (state) => void;
+  retryCount: number;
 }
 
 export const EpisodeSelectorMenu = ({
@@ -34,9 +35,11 @@ export const EpisodeSelectorMenu = ({
   episode,
   episodeList,
   setPlayerError,
+  retryCount,
 }: EpisodeSelectorMenuProps) => {
   const [watchedEpisodes, setWatchedEpisodes] = useState([]);
   useEffect(() => {
+    let active = true;
     const __getInfo = async () => {
       let url = `${ENDPOINTS.release.episode}/${release_id}/${voiceover.id}/${source.id}`;
       if (token) {
@@ -45,34 +48,44 @@ export const EpisodeSelectorMenu = ({
       const episodes = await _fetchAPI(
         url,
         "Не удалось получить информацию о эпизодах",
-        setPlayerError
+        (error) => { if (active) setPlayerError(error); }
       );
-      if (episodes) {
-        let anonEpisodesWatched = getAnonEpisodesWatched(
-          release_id,
-          source.id,
-          voiceover.id
-        );
-        let lastEpisodeWatched = Math.max.apply(
-          0,
-          Object.keys(anonEpisodesWatched[release_id][source.id][voiceover.id])
-        );
-        let selectedEpisode =
-          episodes.episodes.find(
-            (episode: Episode) => episode.position == lastEpisodeWatched
-          ) || episodes.episodes[0];
+      if (!active || !episodes) return;
 
-        setEpisode({
-          selected: selectedEpisode,
-          available: episodes.episodes,
+      const episodeItems = Array.isArray(episodes.episodes) ? episodes.episodes : [];
+      let anonEpisodesWatched = getAnonEpisodesWatched(
+        release_id,
+        source.id,
+        voiceover.id
+      );
+      let lastEpisodeWatched = Math.max.apply(
+        0,
+        Object.keys(anonEpisodesWatched[release_id][source.id][voiceover.id])
+      );
+      let selectedEpisode =
+        episodeItems.find(
+          (episode: Episode) => episode.position == lastEpisodeWatched
+        ) || episodeItems[0] || null;
+
+      setEpisode({
+        selected: selectedEpisode,
+        available: episodeItems,
+      });
+      if (!selectedEpisode) {
+        setPlayerError({
+          message: "Для выбранного источника нет доступных серий",
+          detail: null,
         });
       }
     };
     if (source) {
       __getInfo();
     }
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source]);
+  }, [source, retryCount]);
 
   useEffect(() => {
     if (release_id && source && voiceover) {

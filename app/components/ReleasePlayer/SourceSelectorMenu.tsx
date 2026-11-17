@@ -20,6 +20,7 @@ interface SourceSelectorMenuProps {
   source: Source;
   sourceList: Source[];
   setPlayerError: (state) => void;
+  retryCount: number;
 }
 
 export const SourceSelectorMenu = ({
@@ -29,44 +30,47 @@ export const SourceSelectorMenu = ({
   source,
   sourceList,
   setPlayerError,
+  retryCount,
 }: SourceSelectorMenuProps) => {
   const playerPreferenceStore = useUserPlayerPreferencesStore();
   const preferredSource = playerPreferenceStore.getPreferredPlayer(release_id);
 
   useEffect(() => {
+    let active = true;
     const __getInfo = async () => {
       let url = `${ENDPOINTS.release.episode}/${release_id}/${voiceover.id}`;
       const src = await _fetchAPI(
         url,
         "Не удалось получить информацию о источниках",
-        setPlayerError
+        (error) => { if (active) setPlayerError(error); }
       );
-      if (src) {
-        const selectedSrc =
-          src.sources.find(
-            (source: Source) => source.name === preferredSource
-          ) || src.sources[0];
-        if (selectedSrc.episodes_count == 0) {
-          const remSources = src.sources.filter(
-            (source: any) => source.id !== selectedSrc.id
-          );
-          setSource({
-            selected: remSources[0],
-            available: remSources,
-          });
-          return;
-        }
-        setSource({
-          selected: selectedSrc,
-          available: src.sources,
+      if (!active || !src) return;
+
+      const sources = Array.isArray(src.sources) ? src.sources : [];
+      const selectedSrc =
+        sources.find(
+          (source: Source) =>
+            source.name === preferredSource && source.episodes_count > 0
+        ) || sources.find((source: Source) => source.episodes_count > 0) || null;
+      setSource({
+        selected: selectedSrc,
+        available: sources,
+      });
+      if (!selectedSrc) {
+        setPlayerError({
+          message: "Для выбранной озвучки нет доступных источников",
+          detail: null,
         });
       }
     };
     if (voiceover) {
       __getInfo();
     }
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voiceover]);
+  }, [voiceover, retryCount]);
 
   if (!voiceover || !source || !sourceList || sourceList.length <= 1) return <></>
 

@@ -191,96 +191,94 @@ export const ReleasePlayerCustom = (props: {
     () => useUserPlayerPreferencesStore.getState().playbackRate || 1
   );
   const [isErrorDetailsOpen, setIsErrorDetailsOpen] = useState(false);
-  const [isEpLoadingTimeout, setIsEpLoadingTimeout] = useState(null);
 
   const [retryCount, setRetryCount] = useState(0);
 
 
   useEffect(() => {
-    const __getInfo = async () => {
-      const hostname = new URL(episode.selected.url).hostname;
+    let active = true;
+    const selectedEpisode = episode.selected;
+    const selectedSource = source.selected;
+    const setCurrentPlayerError = (error) => {
+      if (active) setPlayerError(error);
+    };
 
-      if (source.selected.name == "Kodik") {
-        const { manifest, poster } = await _fetchKodikManifest(
-          episode.selected.url,
-          setPlayerError
-        );
-        if (manifest) {
-          SetPlayerProps({
-            src: manifest,
-            poster: poster,
-            type: "hls",
-          });
-        }
+    const setManifest = (manifest, poster, type: "hls" | "mp4") => {
+      if (!active) return;
+      if (manifest) {
+        SetPlayerProps({ src: manifest, poster, type });
         return;
       }
-      // if (["Libria", "Liberty", "Liberty (работает нестабильно)"].includes(source.selected.name)) {
-      if (["anixart.libria.fun"].includes(hostname)) {
-        const { manifest, poster } = await _fetchAnilibriaManifest(
-          episode.selected.url,
-          setPlayerError
-        );
-        if (manifest) {
-          SetPlayerProps({
-            src: manifest,
-            poster: poster,
-            type: "hls",
-          });
-        }
-        return;
-      }
-      // if (source.selected.name == "Sibnet") {
-      if (["video.sibnet.ru"].includes(hostname)) {
-        const { manifest, poster } = await _fetchSibnetManifest(
-          episode.selected.url,
-          setPlayerError
-        );
-        if (manifest) {
-          SetPlayerProps({
-            src: manifest,
-            poster: poster,
-            type: "mp4",
-          });
-        }
-        return;
-      }
-      if (episode.selected.url.toLowerCase().endsWith(".mp4")) {
-        SetPlayerProps({
-          src: episode.selected.url,
-          poster: null,
-          type: "mp4",
-        });
-        return;
-      }
-      if (episode.selected.url.toLowerCase().endsWith(".m3u8")) {
-        SetPlayerProps({
-          src: episode.selected.url,
-          poster: null,
-          type: "hls",
-        });
-        return;
-      }
-      setPlayerError({
-        message: `Источник "${source.selected.name}" не поддерживается`,
-        detail: null,
+      setPlayerError((current) => current || {
+        message: "Источник не отдал видео",
+        detail: "Парсер не вернул ссылку на поток. Попробуйте другую озвучку, источник или обычный плеер.",
       });
     };
-    if (episode.selected) {
-      if (isEpLoadingTimeout) {
-        clearTimeout(isEpLoadingTimeout);
+
+    const __getInfo = async () => {
+      if (!selectedEpisode || !selectedSource) return;
+      let hostname = "";
+      try {
+        hostname = new URL(selectedEpisode.url).hostname;
+      } catch {
+        if (active) {
+          setPlayerError({
+            message: `Источник "${selectedSource.name}" вернул некорректную ссылку`,
+            detail: null,
+          });
+        }
+        return;
       }
-      setPlayerError(null);
-      SetPlayerProps({
-        src: null,
-        poster: null,
-        type: null,
-      });
-      setIsEpLoadingTimeout(
-        setTimeout(() => {
-          __getInfo();
-        }, 250)
-      );
-    }
+
+      if (selectedSource.name == "Kodik") {
+        const { manifest, poster } = await _fetchKodikManifest(
+          selectedEpisode.url,
+          setCurrentPlayerError
+        );
+        setManifest(manifest, poster, "hls");
+        return;
+      }
+      if (["anixart.libria.fun"].includes(hostname)) {
+        const { manifest, poster } = await _fetchAnilibriaManifest(
+          selectedEpisode.url,
+          setCurrentPlayerError
+        );
+        setManifest(manifest, poster, "hls");
+        return;
+      }
+      if (["video.sibnet.ru"].includes(hostname)) {
+        const { manifest, poster } = await _fetchSibnetManifest(
+          selectedEpisode.url,
+          setCurrentPlayerError
+        );
+        setManifest(manifest, poster, "mp4");
+        return;
+      }
+      if (selectedEpisode.url.toLowerCase().endsWith(".mp4")) {
+        setManifest(selectedEpisode.url, null, "mp4");
+        return;
+      }
+      if (selectedEpisode.url.toLowerCase().endsWith(".m3u8")) {
+        setManifest(selectedEpisode.url, null, "hls");
+        return;
+      }
+      if (active) {
+        setPlayerError({
+          message: `Источник "${selectedSource.name}" не поддерживается`,
+          detail: null,
+        });
+      }
+    };
+
+    setPlayerError(null);
+    SetPlayerProps({ src: null, poster: null, type: null });
+    const loadingTimeout = selectedEpisode ?
+      window.setTimeout(__getInfo, 250)
+    : null;
+    return () => {
+      active = false;
+      if (loadingTimeout !== null) window.clearTimeout(loadingTimeout);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episode.selected, retryCount]);
 
@@ -386,6 +384,27 @@ export const ReleasePlayerCustom = (props: {
     });
   }
 
+  function changeVoiceover(next) {
+    if (voiceover.selected?.id !== next.selected?.id) {
+      setSource({ selected: null, available: null });
+      setEpisode({ selected: null, available: null });
+      SetPlayerProps({ src: null, poster: null, type: null });
+      setPlayerError(null);
+      setIsErrorDetailsOpen(false);
+    }
+    setVoiceover(next);
+  }
+
+  function changeSource(next) {
+    if (source.selected?.id !== next.selected?.id) {
+      setEpisode({ selected: null, available: null });
+      SetPlayerProps({ src: null, poster: null, type: null });
+      setPlayerError(null);
+      setIsErrorDetailsOpen(false);
+    }
+    setSource(next);
+  }
+
   return (
     <div className="player-frame">
       <div className="flex items-center justify-center w-full h-full">
@@ -455,15 +474,13 @@ export const ReleasePlayerCustom = (props: {
                     {playerError.detail}
                   </p>
                 }
-                {voiceover.selected && source.selected && episode.selected ?
-                  <button
-                    type="button"
-                    className="btn g sm"
-                    onClick={() => setRetryCount(retryCount + 1)}
-                  >
-                    Повторить
-                  </button>
-                : ""}
+                <button
+                  type="button"
+                  className="btn g sm"
+                  onClick={() => setRetryCount(retryCount + 1)}
+                >
+                  Повторить
+                </button>
               </div>
             </>
           : ""}
@@ -532,16 +549,18 @@ export const ReleasePlayerCustom = (props: {
                 token={props.token}
                 voiceover={voiceover.selected}
                 voiceoverList={voiceover.available}
-                setVoiceover={setVoiceover}
+                setVoiceover={changeVoiceover}
                 setPlayerError={setPlayerError}
+                retryCount={retryCount}
               />
               <SourceSelectorMenu
                 release_id={props.id}
                 voiceover={voiceover.selected}
                 source={source.selected}
                 sourceList={source.available}
-                setSource={setSource}
+                setSource={changeSource}
                 setPlayerError={setPlayerError}
+                retryCount={retryCount}
               />
               <EpisodeSelectorMenu
                 release_id={props.id}
@@ -552,6 +571,7 @@ export const ReleasePlayerCustom = (props: {
                 episodeList={episode.available}
                 setEpisode={setEpisode}
                 setPlayerError={setPlayerError}
+                retryCount={retryCount}
               />
               {!voiceover.selected && !source.selected && !episode.selected ?
                 <p>Нет доступных вариантов для выбора</p>

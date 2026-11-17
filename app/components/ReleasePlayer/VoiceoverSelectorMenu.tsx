@@ -23,6 +23,7 @@ interface VoiceoverSelectorMenuProps {
   voiceover: Voiceover;
   voiceoverList: Voiceover[];
   setPlayerError: (state) => void;
+  retryCount: number;
 }
 
 export const VoiceoverSelectorMenu = ({
@@ -32,11 +33,13 @@ export const VoiceoverSelectorMenu = ({
   voiceover,
   voiceoverList,
   setPlayerError,
+  retryCount,
 }: VoiceoverSelectorMenuProps) => {
   const playerPreferenceStore = useUserPlayerPreferencesStore();
   const preferredVO = playerPreferenceStore.getPreferredVoiceover(release_id);
 
   useEffect(() => {
+    let active = true;
     const __getInfo = async () => {
       let url = `${ENDPOINTS.release.episode}/${release_id}`;
       if (token) {
@@ -45,22 +48,32 @@ export const VoiceoverSelectorMenu = ({
       const vo = await _fetchAPI(
         url,
         "Не удалось получить информацию о озвучках",
-        setPlayerError,
+        (error) => { if (active) setPlayerError(error); },
         { 1: "Просмотр запрещён" }
       );
-      if (vo) {
-        const selectedVO =
-          vo.types.find((voiceover: Voiceover) => voiceover.name === preferredVO) ||
-          vo.types[0];
-        setVoiceover({
-          selected: selectedVO,
-          available: vo.types,
+      if (!active || !vo) return;
+
+      const voiceovers = Array.isArray(vo.types) ? vo.types : [];
+      const selectedVO =
+        voiceovers.find((voiceover: Voiceover) => voiceover.name === preferredVO) ||
+        voiceovers[0] || null;
+      setVoiceover({
+        selected: selectedVO,
+        available: voiceovers,
+      });
+      if (!selectedVO) {
+        setPlayerError({
+          message: "Для этого релиза нет доступных озвучек",
+          detail: null,
         });
       }
     };
     __getInfo();
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [release_id, token]);
+  }, [release_id, token, retryCount]);
 
   if (!voiceover) return <></>
 
