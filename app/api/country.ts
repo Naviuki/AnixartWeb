@@ -26,11 +26,21 @@ const COUNTRY_LANGUAGE: Record<string, string> = {
   австрал: "английский",
   польш: "польский",
   турци: "турецкий",
+  швеци: "шведский",
+  нидерланд: "нидерландский",
 };
 
 export const countryLanguage = (country?: string | null): string => {
   if (!country) return "";
-  const value = country.trim().toLowerCase();
+  const value = country.trim().toLowerCase().replace(/\s+/g, " ");
+  if (value === "кндр" || value.includes("северн")) return "";
+  if (
+    value === "южная корея" ||
+    value === "республика корея" ||
+    value.startsWith("южная корея ")
+  ) {
+    return "корейский";
+  }
   if (COUNTRY_LANGUAGE[value]) return COUNTRY_LANGUAGE[value];
   for (const [key, language] of Object.entries(COUNTRY_LANGUAGE)) {
     if (value.startsWith(key)) return language;

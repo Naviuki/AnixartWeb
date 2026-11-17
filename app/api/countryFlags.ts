@@ -8,7 +8,9 @@ type Stripe =
   | { type: "circle"; color: string } // круг в центре поверх полос
   | { type: "canton"; color: string } // квадрат в левом верхнем углу
   | { type: "cross"; color: string } // скандинавский крест
-  | { type: "triangle"; color: string }; // треугольник у древка
+  | { type: "triangle"; color: string } // треугольник у древка
+  | { type: "taegeuk" } // красно-синий тэгык на флаге Южной Кореи
+  | { type: "trigrams" }; // четыре чёрные триграммы вокруг него
 
 type FlagSpec = { bg: string; parts: Stripe[] };
 
@@ -24,7 +26,7 @@ const FLAGS: Record<string, FlagSpec> = {
   },
   коре: {
     bg: "#ffffff",
-    parts: [{ type: "circle", color: "#cd2e3a" }],
+    parts: [{ type: "taegeuk" }, { type: "trigrams" }],
   },
   сша: {
     bg: "#ffffff",
@@ -90,8 +92,18 @@ const FLAGS: Record<string, FlagSpec> = {
 // Возвращает описание флага или null, если страна незнакома
 export const countryFlagSpec = (country?: string | null): FlagSpec | null => {
   if (!country) return null;
-  const value = country.trim().toLowerCase();
+  const value = country.trim().toLowerCase().replace(/\s+/g, " ");
   if (!value) return null;
+  // В API Корея без уточнения означает Южную Корею. Полные названия
+  // распознаём явно, а Северную Корею не подменяем южнокорейским флагом.
+  if (
+    value === "южная корея" ||
+    value === "республика корея" ||
+    value.startsWith("южная корея ")
+  ) {
+    return FLAGS.коре;
+  }
+  if (value === "кндр" || value.includes("северн")) return null;
   if (FLAGS[value]) return FLAGS[value];
   for (const [key, spec] of Object.entries(FLAGS)) {
     if (value.startsWith(key)) return spec;
