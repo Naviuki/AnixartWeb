@@ -23,11 +23,8 @@ export async function _fetchAPI(
       }
     }
     if (error.code) {
-      if (Object.keys(onErrorCodes).includes(error.code.toString())) {
-        errorDetail = onErrorCodes[error.code.toString()];
-      } else {
-        errorDetail = `API вернуло ошибку: ${error.code}`;
-      }
+      const knownError = onErrorCodes?.[error.code];
+      errorDetail = knownError || `API вернуло ошибку: ${error.code}`;
     }
 
     setPlayerError({
@@ -127,7 +124,7 @@ export const _fetchDirectManifest = async (
     setPlayerError
   );
 
-  if (data?.manifest) {
+  if (typeof data?.manifest === "string" && data.manifest) {
     return {
       manifest: toPlayableUrl(data.manifest),
       poster: data.poster || null,
@@ -153,15 +150,11 @@ export const _fetchKodikManifest = async (
     setPlayerError
   );
 
-  if (data) {
-    let manifest: string = data.manifest;
-    if (!manifest.startsWith("http")) {
-      let file = new File([manifest], "manifest.m3u8", {
-        type: "application/x-mpegURL",
-      });
-      manifest = URL.createObjectURL(file);
-    }
-    return { manifest, poster: data.poster };
+  if (typeof data?.manifest === "string" && data.manifest) {
+    return {
+      manifest: toPlayableUrl(data.manifest),
+      poster: data.poster || null,
+    };
   }
   return { manifest: null, poster: null };
 };
@@ -183,12 +176,11 @@ export const _fetchAnilibriaManifest = async (
     setPlayerError
   );
 
-  if (data) {
-    let file = new File([data.manifest], "manifest.m3u8", {
-      type: "application/x-mpegURL",
-    });
-    let manifest = URL.createObjectURL(file);
-    return { manifest, poster: data.poster };
+  if (typeof data?.manifest === "string" && data.manifest) {
+    return {
+      manifest: toPlayableUrl(data.manifest),
+      poster: data.poster || null,
+    };
   }
   return { manifest: null, poster: null };
 };
@@ -210,8 +202,11 @@ export const _fetchSibnetManifest = async (
     setPlayerError
   );
 
-  if (data) {
-    return { manifest: data.manifest, poster: data.poster };
+  if (typeof data?.manifest === "string" && data.manifest) {
+    return {
+      manifest: toPlayableUrl(data.manifest),
+      poster: data.poster || null,
+    };
   }
   return { manifest: null, poster: null };
 };
