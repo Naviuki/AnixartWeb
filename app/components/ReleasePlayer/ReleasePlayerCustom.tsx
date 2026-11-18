@@ -584,7 +584,7 @@ export const ReleasePlayerCustom = (props: {
           </MediaChromeDialog>
           <MediaControlBar className={`${Styles["media-control-bar"]}`}>
             <MediaChromeButton
-              className={`${Styles["media-button"]} w-[calc(2*var(--base))] z-[2]`}
+              className={`${Styles["media-button"]} ${Styles["media-episode-step"]} w-[calc(2*var(--base))] z-[2]`}
               aria-label="Предыдущая серия"
               onClick={() => _prevEpisode()}
             >
@@ -641,7 +641,7 @@ export const ReleasePlayerCustom = (props: {
               </svg>
             </MediaPlayButton>
             <MediaChromeButton
-              className={`${Styles["media-button"]} w-[calc(2*var(--base))] z-[2]`}
+              className={`${Styles["media-button"]} ${Styles["media-episode-step"]} w-[calc(2*var(--base))] z-[2]`}
               aria-label="Следующая серия"
               onClick={() => _nextEpisode()}
             >
@@ -764,7 +764,7 @@ export const ReleasePlayerCustom = (props: {
               </svg>
             </MediaSeekForwardButton>
             <MediaSeekForwardButton
-              className={`${Styles["media-button"]}`}
+              className={`${Styles["media-button"]} ${Styles["media-forward-jump"]}`}
               seekOffset={90}
             >
               <div slot="tooltip-content">Пропустить 1.5 минуты</div>

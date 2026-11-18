@@ -136,15 +136,74 @@
 .media-settings-menu {
   --media-menu-icon-height: 20px;
   --media-menu-item-icon-height: 20px;
-  --media-settings-menu-min-width: calc(10 * var(--base));
   --media-menu-transform-in: translateY(0) scale(1);
   --media-menu-transform-out: translateY(20px) rotate(3deg) scale(1);
-  padding-block: calc(0.15 * var(--base));
-  margin-right: 10px;
-  margin-bottom: 17px;
+  padding-block: calc(0.5 * var(--base));
   border-radius: 8px;
-  z-index: 2;
   user-select: none;
+  /* Настройки всегда открываются листом у нижнего края: у низкого окна
+     и при прокрутке меню у кнопки уезжает за край экрана */
+  position: fixed !important;
+  inset: auto 8px calc(3 * var(--base)) 8px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  /* Высоту задаёт переменная media-chrome, иначе лист обрезается её замером */
+  --media-menu-max-height: min(56vh, 320px);
+  background: rgb(16 16 18) !important;
+  max-height: min(56vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 !important;
+  z-index: 60;
+}
+
+/* Пока открыто подменю, лист держит высоту списка: иначе он сжимается
+   до двух строк родителя, и параметры не видно */
+.media-settings-menu:has([slot="submenu"]:not([hidden])) {
+  height: min(56vh, 320px);
+}
+
+/* Подменю раскрывается поверх листа: внутренний список уезжает влево
+   на свою ширину, поэтому возвращаем подменю на место тем же сдвигом */
+.media-settings-menu media-settings-menu-item {
+  /* Пункт не должен становиться опорой для подменю — иначе оно встаёт
+     по высоте одной строки вместо всего листа */
+  position: static;
+}
+.media-settings-menu [slot="submenu"] {
+  position: absolute !important;
+  /* Привязка идёт к строке списка, поэтому высоту задаём явно — та же, что у листа */
+  inset: auto 0 0 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  height: min(56vh, 320px) !important;
+  max-height: none !important;
+  --media-menu-max-height: 100%;
+  background: rgb(16 16 18) !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 !important;
+  transform: none !important;
+  translate: 100% 0 !important;
+}
+.media-settings-menu [slot="submenu"][hidden] {
+  display: none !important;
+}
+
+/* На широком экране лист компактный, у правого края */
+@media (min-width: 640px) {
+  .media-settings-menu {
+    inset: auto 12px 12px auto !important;
+    width: min(22rem, calc(100% - 24px)) !important;
+    --media-menu-max-height: min(60vh, 24rem);
+    max-height: min(60vh, 24rem);
+  }
+  .media-settings-menu:has([slot="submenu"]:not([hidden])) {
+    height: min(60vh, 24rem);
+  }
+  .media-settings-menu [slot="submenu"] {
+    height: min(60vh, 24rem) !important;
+  }
 }
 
 .media-source-dialog {
@@ -231,6 +290,42 @@
 
 .media-settings-menu-item[submenusize="0"] {
   display: none;
+}
+
+/* Цель на сенсоре не должна быть уже 30 px: иконки 24 px в тесной панели сжимались до 9 px */
+@media (pointer: coarse), (max-width: 639px), (max-height: 620px) {
+  .media-button {
+    min-width: 32px;
+    min-height: 30px;
+    justify-content: center;
+  }
+}
+
+/* Тесно по ширине: переключение серий остаётся в меню выбора серии */
+@media (max-width: 480px) {
+  .media-episode-step,
+  .media-forward-jump,
+  .media-time-display {
+    display: none;
+  }
+}
+
+/* Узкая панель: органы управления переносятся на вторую строку, а не вылезают */
+@media (max-width: 639px) {
+  .media-control-bar {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding-block: 2px;
+    align-content: flex-end;
+  }
+}
+
+/* Мало места по высоте: лист ниже и уже, чтобы кнопки управления остались видны */
+@media (max-height: 620px) {
+  .media-settings-menu {
+    max-height: min(70vh, 240px);
+  }
 }
 
 @keyframes bounce-scale-play {
