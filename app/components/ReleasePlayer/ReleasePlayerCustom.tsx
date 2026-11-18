@@ -38,7 +38,6 @@ import {
 } from "./PlayerParsing";
 import { Episode, EpisodeSelectorMenu } from "./EpisodeSelectorMenu";
 import HlsVideo from "hls-video-element/react";
-import VideoJS from "videojs-video-element/react";
 import { ENDPOINTS } from "#/api/config";
 import {
   getAnonEpisodesWatched,
@@ -140,14 +139,16 @@ const VideoElement = ({
           defaultPlaybackRate={defaultPlaybackRate}
         />
       : type == "mp4" ?
-        <VideoJS
+        <video
           className={"object-contain h-full aspect-video"}
-          src={src}
-          poster={poster}
+          src={src || undefined}
+          poster={poster || undefined}
           slot="media"
           id="video-element"
-          defaultPlaybackRate={defaultPlaybackRate}
-        />
+          playsInline
+          preload="metadata"
+          {...({ defaultPlaybackRate } as any)}
+        ></video>
       : <video
           className={"object-contain h-full aspect-video"}
           slot="media"

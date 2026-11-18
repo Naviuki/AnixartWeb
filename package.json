@@ -28,7 +28,6 @@
     "react-toastify": "^11.0.5",
     "swiper": "^11.1.4",
     "swr": "^2.2.5",
-    "videojs-video-element": "^1.4.1",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
