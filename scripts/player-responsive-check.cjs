@@ -198,7 +198,26 @@ async function main() {
         const submenuNode = item.querySelector('[slot=submenu]');
         const submenu = submenuNode && !submenuNode.hasAttribute('hidden') ? measure(submenuNode) : { error: 'подменю не открылось' };
         button.click();
-        return { main, submenu };
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        button.click();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Самый длинный список — назначение клавиш: все строки должны быть
+        // доступны прокруткой внутри листа на любом экране
+        const keysItem = panel.querySelector(':scope > media-settings-menu-item:last-child');
+        keysItem.click();
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        const keysNode = keysItem.querySelector('[slot=submenu]');
+        const keys = keysNode && !keysNode.hasAttribute('hidden') ? measure(keysNode) : { error: 'меню клавиш не открылось' };
+        if (!keys.error) {
+          const last = keysNode.querySelector('media-chrome-menu-item:last-child');
+          last.scrollIntoView({ block: 'nearest' });
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          const row = last.getBoundingClientRect();
+          const panelRect = keysNode.getBoundingClientRect();
+          keys.lastVisible = row.top >= panelRect.top - 1 && row.bottom <= panelRect.bottom + 1;
+        }
+        button.click();
+        return { main, submenu, keys };
       })()`);
       results.push({ ...snapshot, menu });
     }
@@ -213,11 +232,12 @@ async function main() {
       assert.equal(result.clipped.length, 0, `${name}: обрезаны ${result.clipped.map((b) => b.label).join(", ")}`);
       assert.equal(result.smallButtons.length, 0, `${name}: мелкие цели ${result.smallButtons.map((b) => `${b.label} ${b.width}x${b.height}`).join(", ")}`);
       assert.equal(result.menu.error, undefined, `${name}: ${result.menu.error}`);
-      for (const [label, panel] of [["меню", result.menu.main], ["подменю", result.menu.submenu]]) {
+      for (const [label, panel] of [["меню", result.menu.main], ["подменю", result.menu.submenu], ["клавиши", result.menu.keys]]) {
         assert.ok(panel, `${name}: ${label} не измерено`);
-        if (panel.error) continue;
+        assert.equal(panel.error, undefined, `${name}: ${panel.error}`);
         assert.ok(panel.left >= 0 && panel.right <= panel.view.width + 1, `${name}: ${label} вылезает по ширине (${panel.left}..${panel.right} из ${panel.view.width})`);
         assert.ok(panel.top >= 0 && panel.bottom <= panel.view.height + 1, `${name}: ${label} вылезает по высоте (${panel.top}..${panel.bottom} из ${panel.view.height})`);
+        if (label === "клавиши") assert.equal(panel.lastVisible, true, `${name}: последний пункт клавиш недоступен прокруткой`);
       }
     }
     console.log("Плеер: переполнений нет, цели не мельче порога, меню влезает на всех экранах");

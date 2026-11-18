@@ -1,7 +1,7 @@
 "use client";
 
 import Styles from "./MediaPlayer.module.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MediaController,
   MediaControlBar,
@@ -44,7 +44,15 @@ import {
   saveAnonEpisodeWatched,
 } from "./ReleasePlayer";
 import { usePreferencesStore } from "#/store/preferences";
-import { useUserPlayerPreferencesStore } from "#/store/player";
+import {
+  useUserPlayerPreferencesStore,
+  type PlayerAction,
+  PLAYER_ACTIONS,
+  SEEK_VALUES,
+  formatKey,
+  formatSeconds,
+  keyToAction,
+} from "#/store/player";
 
 const RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.5, 4];
 
@@ -72,6 +80,79 @@ const PlaybackRateMenu = (props: {
           {rate}×
         </MediaChromeMenuItem>
       ))}
+    </MediaChromeMenu>
+  );
+};
+
+// Шаг перемотки выбирается из готового списка: произвольное число на сенсоре не набрать
+const SeekMenu = (props: {
+  title: string;
+  value: number;
+  onPick: (seconds: number) => void;
+}) => {
+  return (
+    <MediaChromeMenu slot="submenu" hidden>
+      <div slot="title">{props.title}</div>
+      {SEEK_VALUES.map((seconds) => (
+        <MediaChromeMenuItem
+          key={`seek_${seconds}`}
+          value={String(seconds)}
+          type="radio"
+          checked={props.value === seconds}
+          onClick={(event: any) => {
+            event.preventDefault();
+            event.stopPropagation();
+            props.onPick(seconds);
+          }}
+        >
+          {formatSeconds(seconds)}
+        </MediaChromeMenuItem>
+      ))}
+    </MediaChromeMenu>
+  );
+};
+
+// Клавиши: нажатие на действие переводит пункт в ожидание клавиши
+const KeysMenu = (props: {
+  keys: Record<PlayerAction, string>;
+  capturing: PlayerAction | null;
+  onCapture: (action: PlayerAction) => void;
+  onReset: () => void;
+}) => {
+  return (
+    <MediaChromeMenu slot="submenu" hidden>
+      <div slot="title">Клавиши</div>
+      {PLAYER_ACTIONS.map(({ action, title, hint }) => (
+        <MediaChromeMenuItem
+          key={`key_${action}`}
+          checked={props.capturing === action}
+          onClick={(event: any) => {
+            event.preventDefault();
+            event.stopPropagation();
+            props.onCapture(action);
+          }}
+        >
+          <span className="flex flex-col text-left">
+            <span>{title}</span>
+            {hint && <span className="text-[11px] opacity-60">{hint}</span>}
+          </span>
+          <span className="ml-auto pl-3 text-[12px] opacity-80">
+            {props.capturing === action
+              ? "нажмите клавишу…"
+              : formatKey(props.keys[action])}
+          </span>
+        </MediaChromeMenuItem>
+      ))}
+      <MediaChromeMenuItem
+        value="reset"
+        onClick={(event: any) => {
+          event.preventDefault();
+          event.stopPropagation();
+          props.onReset();
+        }}
+      >
+        Сбросить клавиши
+      </MediaChromeMenuItem>
     </MediaChromeMenu>
   );
 };
@@ -194,6 +275,15 @@ export const ReleasePlayerCustom = (props: {
   const [isErrorDetailsOpen, setIsErrorDetailsOpen] = useState(false);
 
   const [retryCount, setRetryCount] = useState(0);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+  // Действие, для которого сейчас ждём нажатие клавиши
+  const [capturing, setCapturing] = useState<PlayerAction | null>(null);
+  const seek = useUserPlayerPreferencesStore((state) => state.seek);
+  const keys = useUserPlayerPreferencesStore((state) => state.keys);
+  const setSeek = useUserPlayerPreferencesStore((state) => state.setSeek);
+  const setKey = useUserPlayerPreferencesStore((state) => state.setKey);
+  const resetKeys = useUserPlayerPreferencesStore((state) => state.resetKeys);
 
 
   useEffect(() => {
@@ -406,8 +496,170 @@ export const ReleasePlayerCustom = (props: {
     setSource(next);
   }
 
+  // Клавиши плеера: работают, когда курсор над плеером, фокус внутри него
+  // или включён полный экран, чтобы не перехватывать клавиши страницы
+  useEffect(() => {
+    if (capturing) return;
+    const getVideo = () => {
+      // У HLS-элемента настоящее видео лежит в теневом корне
+      const host = document.getElementById("video-element");
+      const inner = (host as any)?.shadowRoot?.querySelector?.("video");
+      return (inner || host) as HTMLVideoElement | null;
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
+      // Открытое меню и видимые бегунки сами обрабатывают стрелки.
+      // Фокус может остаться на скрытом пункте после закрытия меню — это не
+      // повод отдавать нажатие стандартному шагу media-chrome вместо настроек
+      const ownKeyboardControl = target?.closest?.(
+        "media-chrome-menu, media-settings-menu, media-chrome-dialog, media-volume-range, media-time-range"
+      );
+      if (
+        ownKeyboardControl &&
+        !target.closest("[hidden]") &&
+        target.getClientRects().length
+      ) {
+        return;
+      }
+      const frame = frameRef.current;
+      const active =
+        document.fullscreenElement != null ||
+        isHovered ||
+        (frame != null && frame.contains(document.activeElement));
+      if (!active) return;
+      const action = keyToAction(keys, event);
+      if (!action) return;
+      // Удержание перемотки и громкости повторяет действие; переключатели —
+      // только один раз, иначе пауза и полный экран начинают мигать
+      if (
+        event.repeat &&
+        !["back", "forward", "jump", "volumeUp", "volumeDown"].includes(action)
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      const video = getVideo();
+      // Перехватываем раньше media-chrome, иначе он сработает ещё раз своим шагом
+      event.preventDefault();
+      event.stopPropagation();
+      switch (action) {
+        case "togglePlay":
+          if (!video) break;
+          if (video.paused) void video.play().catch(() => {});
+          else video.pause();
+          break;
+        case "back":
+        case "forward":
+        case "jump": {
+          if (!video) break;
+          const step = action === "jump" ? seek.jump : seek[action];
+          const next = video.currentTime + (action === "back" ? -step : step);
+          video.currentTime = Math.min(
+            Math.max(next, 0),
+            video.duration || next
+          );
+          break;
+        }
+        case "volumeUp":
+        case "volumeDown": {
+          if (!video) break;
+          const level =
+            video.volume + (action === "volumeUp" ? 0.1 : -0.1);
+          video.volume = Math.min(1, Math.max(0, Number(level.toFixed(2))));
+          video.muted = false;
+          break;
+        }
+        case "mute":
+          // Нажимаем саму кнопку: так состояние звука остаётся согласованным с панелью
+          (
+            document.querySelector(
+              "media-mute-button"
+            ) as HTMLButtonElement | null
+          )?.click();
+          break;
+        case "fullscreen":
+          (
+            document.querySelector(
+              "media-fullscreen-button"
+            ) as HTMLButtonElement | null
+          )?.click();
+          break;
+        case "pip":
+          (
+            document.querySelector(
+              "media-pip-button"
+            ) as HTMLButtonElement | null
+          )?.click();
+          break;
+        case "nextEpisode":
+          _nextEpisode();
+          break;
+        case "prevEpisode":
+          _prevEpisode();
+          break;
+      }
+    };
+    document.addEventListener("keydown", onKeyDown, true);
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys, seek, isHovered, capturing, episode]);
+
+  // Ожидание новой клавиши: перехватываем нажатие раньше остальных обработчиков
+  useEffect(() => {
+    if (!capturing) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (/^(Shift|Control|Alt|Meta)(Left|Right)?$/.test(event.key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.code === "Escape") {
+        setCapturing(null);
+        return;
+      }
+      const combo = [
+        event.ctrlKey && "Ctrl",
+        event.altKey && "Alt",
+        event.shiftKey && "Shift",
+        event.metaKey && "Meta",
+        event.code,
+      ]
+        .filter(Boolean)
+        .join("+");
+      setKey(capturing, combo);
+      setCapturing(null);
+    };
+    document.addEventListener("keydown", onKey, true);
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      const menu = target?.closest?.("media-chrome-menu");
+      const isKeysMenu =
+        menu?.querySelector(':scope > [slot="title"]')?.textContent ===
+        "Клавиши";
+      // Закрытие меню или щелчок в другом месте отменяет ожидание: следующая
+      // буква в поиске не должна нечаянно стать клавишей плеера
+      if (!isKeysMenu) setCapturing(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [capturing, setKey]);
+
   return (
-    <div className="player-frame">
+    <div
+      className="player-frame"
+      ref={frameRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="flex items-center justify-center w-full h-full">
         <MediaController
           breakpoints="md:480"
@@ -538,6 +790,50 @@ export const ReleasePlayerCustom = (props: {
               <MediaRenditionMenu slot="submenu" hidden>
                 <div slot="title">Качество</div>
               </MediaRenditionMenu>
+            </MediaSettingsMenuItem>
+            <MediaSettingsMenuItem
+              className={`${Styles["media-settings-menu-item"]}`}
+            >
+              Назад · {seek.back} с
+              <SeekMenu
+                title="Вернуться на"
+                value={seek.back}
+                onPick={(seconds) => setSeek("back", seconds)}
+              />
+            </MediaSettingsMenuItem>
+            <MediaSettingsMenuItem
+              className={`${Styles["media-settings-menu-item"]}`}
+            >
+              Вперёд · {seek.forward} с
+              <SeekMenu
+                title="Пропустить"
+                value={seek.forward}
+                onPick={(seconds) => setSeek("forward", seconds)}
+              />
+            </MediaSettingsMenuItem>
+            <MediaSettingsMenuItem
+              className={`${Styles["media-settings-menu-item"]}`}
+            >
+              Большой шаг · {seek.jump} с
+              <SeekMenu
+                title="Пропустить сразу"
+                value={seek.jump}
+                onPick={(seconds) => setSeek("jump", seconds)}
+              />
+            </MediaSettingsMenuItem>
+            <MediaSettingsMenuItem
+              className={`${Styles["media-settings-menu-item"]}`}
+            >
+              Клавиши
+              <KeysMenu
+                keys={keys}
+                capturing={capturing}
+                onCapture={setCapturing}
+                onReset={() => {
+                  resetKeys();
+                  setCapturing(null);
+                }}
+              />
             </MediaSettingsMenuItem>
           </MediaSettingsMenu>
           <MediaChromeDialog
@@ -709,9 +1005,9 @@ export const ReleasePlayerCustom = (props: {
             </MediaTimeRange>
             <MediaSeekBackwardButton
               className={`${Styles["media-button"]}`}
-              seekOffset={10}
+              seekOffset={seek.back}
             >
-              <div slot="tooltip-content">Вернуться на 10 секунд</div>
+              <div slot="tooltip-content">Вернуться на {formatSeconds(seek.back)}</div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 {...({ slot: "icon" } as any)}
@@ -737,9 +1033,9 @@ export const ReleasePlayerCustom = (props: {
             </MediaSeekBackwardButton>
             <MediaSeekForwardButton
               className={`${Styles["media-button"]}`}
-              seekOffset={10}
+              seekOffset={seek.forward}
             >
-              <div slot="tooltip-content">Пропустить 10 секунд</div>
+              <div slot="tooltip-content">Пропустить {formatSeconds(seek.forward)}</div>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 {...({ slot: "icon" } as any)}
@@ -765,9 +1061,9 @@ export const ReleasePlayerCustom = (props: {
             </MediaSeekForwardButton>
             <MediaSeekForwardButton
               className={`${Styles["media-button"]} ${Styles["media-forward-jump"]}`}
-              seekOffset={90}
+              seekOffset={seek.jump}
             >
-              <div slot="tooltip-content">Пропустить 1.5 минуты</div>
+              <div slot="tooltip-content">Пропустить {formatSeconds(seek.jump)}</div>
               <svg
                 {...({ slot: "icon" } as any)}
                 className={`${Styles["svg"]}`}
