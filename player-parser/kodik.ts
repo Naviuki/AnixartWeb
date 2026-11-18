@@ -141,10 +141,10 @@ export async function getKodikURL(req, res, url: string) {
   }
 
   if (!isAnimeTvSeries(data)) {
-    data["manifest"] = data.links[data.default][0].src.replace(
-      `${data.default}.mp4:hls:`,
-      ""
-    );
+    // На актуальных Kodik CDN общий /manifest.m3u8 может не существовать,
+    // хотя исходный плейлист качества доступен. Не переписываем рабочую ссылку:
+    // иначе hls.js получает 500 ещё до загрузки метаданных и сегментов.
+    data["manifest"] = data.links[data.default][0].src;
   } else {
     data["manifest"] = createManifest(data);
   }
