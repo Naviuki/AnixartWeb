@@ -1,14 +1,16 @@
 // A/B производительности нового плеера: размытие у кнопок против его отключения.
-// Меряются пропущенные кадры, длинные задачи и частота отрисовки на реальном потоке.
-// Нужны запущенные http://localhost:3000 и парсер на порту 7000.
+// Меряются пропущенные кадры, длинные задачи и частота отрисовки на локальном HLS.
+// Нужны запущенные http://localhost:3000 и ffmpeg; внешние видео и парсер не требуются.
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
 const { mkdtempSync, rmSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
+const { startPlayerTestMedia } = require("./player-test-media.cjs");
 
 const BASE = process.env.ANIX_URL || "http://localhost:3000";
 const PORT = 9353;
+const MEDIA_PORT = 9356;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Одна и та же серия и позиция, чтобы сравнение было честным.
@@ -125,6 +127,7 @@ async function measureStable(evaluate, seconds, repeats, rate, accept) {
 async function main() {
   const health = await fetch(`${BASE}/api/version`, { signal: AbortSignal.timeout(10000) });
   assert.equal(health.ok, true, "Сначала нужен работающий локальный сервер");
+  const media = await startPlayerTestMedia(MEDIA_PORT);
 
   const profile = mkdtempSync(join(tmpdir(), "anix-player-perf-"));
   const chrome = spawn(process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", [
@@ -154,13 +157,45 @@ async function main() {
       pending.set(id, { resolve, reject });
       ws.send(JSON.stringify({ id, method, params }));
     });
+    const catalog = {
+      "episode/18439": {
+        code: 0,
+        types: [{ id: 9, name: "Локальный тест", icon: "", episodes_count: 1, view_count: 0, pinned: false }],
+      },
+      "episode/18439/9": {
+        code: 0,
+        sources: [{ id: 9, name: "Локальный HLS", episodes_count: 1 }],
+      },
+      "episode/18439/9/9": {
+        code: 0,
+        episodes: [
+          { position: 1, name: "HLS для замера", is_watched: false, url: `http://127.0.0.1:${MEDIA_PORT}/sample.m3u8` },
+        ],
+      },
+    };
     ws.onmessage = ({ data }) => {
       const message = JSON.parse(data);
-      if (!message.id || !pending.has(message.id)) return;
-      const task = pending.get(message.id);
-      pending.delete(message.id);
-      if (message.error) task.reject(new Error(message.error.message));
-      else task.resolve(message.result);
+      if (message.id && pending.has(message.id)) {
+        const task = pending.get(message.id);
+        pending.delete(message.id);
+        if (message.error) task.reject(new Error(message.error.message));
+        else task.resolve(message.result);
+        return;
+      }
+      if (message.method === "Fetch.requestPaused") {
+        const { requestId, request } = message.params;
+        const path = new URL(request.url).pathname.replace(/^\/api\/proxy\//, "");
+        if (catalog[path]) {
+          send("Fetch.fulfillRequest", {
+            requestId,
+            responseCode: 200,
+            responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+            body: Buffer.from(JSON.stringify(catalog[path])).toString("base64"),
+          }).catch(() => {});
+        } else {
+          send("Fetch.continueRequest", { requestId }).catch(() => {});
+        }
+      }
     };
     const evaluate = async (expression) => {
       const result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
@@ -194,6 +229,7 @@ async function main() {
       await sleep(600);
       if (await evaluate("JSON.parse(localStorage.getItem('preferences') || '{}').state?.params?.experimental?.newPlayer === true")) break;
     }
+    await send("Fetch.enable", { patterns: [{ urlPattern: "*api/proxy/episode*" }] });
     await send("Page.navigate", { url: `${BASE}/release/18439` });
     await waitFor("!!document.querySelector('#video-element')", 60000);
     await evaluate("document.querySelector('.md .mb-close')?.click()");
@@ -284,11 +320,13 @@ async function main() {
   } finally {
     ws?.close();
     chrome.kill();
+    media.server.close();
     await sleep(700);
     try {
       rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+      rmSync(media.directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
     } catch (error) {
-      console.warn(`Не удалось сразу удалить временный профиль: ${error.message}`);
+      console.warn(`Не удалось сразу удалить временные файлы: ${error.message}`);
     }
   }
 }
