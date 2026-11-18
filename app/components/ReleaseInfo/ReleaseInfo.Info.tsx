@@ -134,7 +134,7 @@ export const ReleaseInfoInfo = (props: {
 
         {props.status.toLowerCase() == "анонс" && (
           <Cell icon="clock" title="Премьера">
-            {props.aired_on_date != 0 ?
+            {props.aired_on_date ?
               unixToDate(props.aired_on_date, "full")
             : props.year ?
               yearLabel
