@@ -53,6 +53,44 @@ assert(koreaSvg.includes("#cd2e3a"), "В SVG Кореи должен быть к
 assert(koreaSvg.includes("trigrams") || koreaSvg.includes("rotate(33.69)"), "В SVG Кореи должны быть триграммы");
 assert(!japanSvg.includes("#0047a0"), "В SVG Японии не должно быть корейского тэгыка");
 
+// Остальные страны не должны опознаваться неверной фигурой
+const uk = countryFlagSpec("Великобритания");
+assert(uk.parts.some((part) => part.type === "unionJack"), "У Великобритании должен быть Юнион Джек");
+const ukSvg = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Великобритания", size: 44 }));
+assert(ukSvg.includes("#012169"), "У Юнион Джека должен быть синий фон");
+assert(ukSvg.includes("#c8102e"), "У Юнион Джека должен быть красный крест");
+assert(!ukSvg.includes("<circle"), "Красный круг вместо диагоналей у Юнион Джека недопустим");
+
+const turkey = countryFlagSpec("Турция");
+assert(turkey.parts.some((part) => part.type === "crescent"), "У Турции должен быть полумесяц");
+assert(turkey.parts.some((part) => part.type === "star"), "У Турции должна быть звезда");
+
+const brazil = countryFlagSpec("Бразилия");
+assert(brazil.parts.some((part) => part.type === "diamond"), "У Бразилии должен быть жёлтый ромб");
+assert(
+  brazil.parts.some((part) => part.type === "circle" && part.color === "#002776"),
+  "В ромбе Бразилии должен быть синий круг"
+);
+
+const canada = countryFlagSpec("Канада");
+assert(canada.parts.some((part) => part.type === "leaf"), "У Канады должен быть кленовый лист");
+
+const china = countryFlagSpec("Китай");
+assert(china.parts.some((part) => part.type === "star" && part.count === 5), "У Китая должны быть пять звёзд");
+
+for (const name of ["США", "Америка"]) {
+  const stripes = countryFlagSpec(name).parts.find((part) => part.type === "h");
+  assert.equal(stripes.colors.length, 13, `У флага ${name} должно быть 13 полос`);
+}
+
+const spain = countryFlagSpec("Испания").parts.find((part) => part.type === "h");
+assert.equal(JSON.stringify(spain.weights), JSON.stringify([1, 2, 1]), "У Испании жёлтая полоса должна быть вдвое шире");
+
+const india = countryFlagSpec("Индия");
+assert(india.parts.some((part) => part.type === "ring"), "У Индии должна быть чакра");
+
+assert(countryFlagSpec("Австралия").parts.some((part) => part.type === "unionJack" && part.canton));
+
 const { countryLanguage } = loadTypeScript("app/api/country.ts");
 for (const [country, language] of [
   ["Япония", "японский"],
