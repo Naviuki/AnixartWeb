@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
 
 import { useUserStore } from "#/store/auth";
 import { ENDPOINTS } from "#/api/config";
@@ -131,54 +130,53 @@ const searchByMapping = {
   none: [{ id: "none", label: "Нет", value: 0 }],
 };
 
+const parseSearchFilters = (value: string | null) => {
+  const fallback = { where: "releases", searchBy: "name" };
+  if (!value) return fallback;
+  try {
+    const filters = JSON.parse(value);
+    if (
+      !filters ||
+      typeof filters !== "object" ||
+      !whereMapping.some((item) => item.id === filters.where)
+    ) {
+      return fallback;
+    }
+    const searchBy = searchByMapping[filters.where] || searchByMapping.none;
+    if (!searchBy.some((item) => item.id === filters.searchBy)) return fallback;
+    return { where: filters.where, searchBy: filters.searchBy };
+  } catch {
+    return fallback;
+  }
+};
+
 export function SearchPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const userStore = useUserStore();
   const [query, setQuery] = useState(searchParams.get("query") || "");
-  const [params, setParams] = useState(null);
+  const [params, setParams] = useState(() =>
+    parseSearchFilters(searchParams.get("params"))
+  );
   const [content, setContent] = useState(null);
 
-  useEffect(() => {
-    const queryParams = searchParams.get("params");
-
-    if (queryParams) {
-      try {
-        setParams(JSON.parse(queryParams));
-      } catch (e) {
-        setParams({
-          where: "releases",
-          searchBy: "name",
-        });
-      }
-    } else {
-      setParams({
-        where: "releases",
-        searchBy: "name",
-      });
-    }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!params) return;
-
+  const updateSearchUrl = () => {
     const url = new URL(`/search`, window.location.origin);
     url.searchParams.set("query", query);
     url.searchParams.set("params", JSON.stringify(params));
-    router.replace(url.toString());
+    if (`${location.pathname}${location.search}` !== `${url.pathname}${url.search}`) {
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+    }
+  };
+
+  useEffect(() => {
+    updateSearchUrl();
     setContent(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   useEffect(() => {
     setContent(null);
-
-    const url = new URL(`/search`, window.location.origin);
-    url.searchParams.set("query", query);
-    url.searchParams.set("params", JSON.stringify(params));
-    router.replace(url.toString());
+    updateSearchUrl();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
