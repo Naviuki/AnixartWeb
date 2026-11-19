@@ -1,3 +1,4 @@
+import { Icon } from "#/components/Icon/Icon";
 import { unixToDate } from "#/api/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,13 +16,17 @@ export const CollectionInfoBasics = (props: {
   return (
     <section className="box collview-main">
       <div className="collview-cover">
-        <Image
-          src={props.image}
-          fill
-          sizes="(max-width: 1023px) 100vw, 720px"
-          className="object-cover"
-          alt=""
-        />
+        {props.image ? (
+          <Image
+            src={props.image}
+            fill
+            sizes="(max-width: 1023px) 100vw, 720px"
+            className="object-cover"
+            alt=""
+          />
+        ) : (
+          <Icon name="collection" size={48} className="coll-image-empty" />
+        )}
       </div>
 
       <h1 className="collview-title">{props.title}</h1>

@@ -6,13 +6,17 @@ export const CollectionLink = (props: any) => {
   return (
     <Link href={`/collection/${props.id}`} className="coll">
       <div className="coll-cover">
-        <Image
-          src={props.image}
-          fill
-          alt={props.title || ""}
-          sizes="(max-width: 760px) 90vw, 320px"
-          className="object-cover"
-        />
+        {props.image ? (
+          <Image
+            src={props.image}
+            fill
+            alt={props.title || ""}
+            sizes="(max-width: 760px) 90vw, 320px"
+            className="object-cover"
+          />
+        ) : (
+          <Icon name="collection" size={48} className="coll-image-empty" />
+        )}
         <div className="coll-grad" />
         <div className="coll-badges">
           <span className="badge soft">

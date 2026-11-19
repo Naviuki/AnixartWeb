@@ -1804,6 +1804,12 @@ body[data-card="list"] .railrow {
   height: 100%;
   object-fit: cover;
 }
+.coll-image-empty {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: var(--t3);
+}
 .coll-grad {
   position: absolute;
   inset: 0;
