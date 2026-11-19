@@ -1,114 +1,37 @@
 // Флаги стран для карточки релиза.
-// Эмодзи-флаги зависят от шрифта ОС: без emoji-шрифта вместо флага рисуется
-// пустой квадрат. Поэтому флаг собирается из полос — он виден всегда.
-
-type Stripe =
-  | { type: "h"; colors: string[]; weights?: number[] } // горизонтальные полосы сверху вниз
-  | { type: "v"; colors: string[] } // вертикальные полосы слева направо
-  | { type: "circle"; color: string } // круг в центре поверх полос
-  | { type: "ring"; color: string } // кольцо (кружок чакры)
-  | { type: "canton"; color: string } // квадрат в левом верхнем углу
-  | { type: "cross"; color: string } // скандинавский крест
-  | { type: "triangle"; color: string } // треугольник у древка
-  | { type: "diamond"; color: string } // ромб в центре
-  | { type: "crescent"; color: string } // полумесяц
-  | { type: "star"; color: string; count?: number; place?: "canton" | "fly" } // звезда (или несколько)
-  | { type: "leaf"; color: string } // кленовый лист
-  | { type: "unionJack"; canton?: boolean } // Юнион Джек целиком (Великобритания, Австралия)
-  | { type: "taegeuk" } // красно-синий тэгык на флаге Южной Кореи
-  | { type: "trigrams" }; // четыре чёрные триграммы вокруг него
-
-type FlagSpec = { bg: string; parts: Stripe[] };
+// Используем официальные SVG-флаги из набора flag-icons (MIT, см. public/flags/LICENSE).
+// Файлы лежат локально в public/flags, поэтому флаги видны без сети и не зависят
+// от того, установлен ли в системе шрифт с эмодзи.
 
 // Ключ — начало названия страны в нижнем регистре, как его отдаёт API
-const FLAGS: Record<string, FlagSpec> = {
-  япон: {
-    bg: "#ffffff",
-    parts: [{ type: "circle", color: "#bc002d" }],
-  },
-  китай: {
-    bg: "#de2910",
-    parts: [{ type: "star", color: "#ffde00", count: 5 }],
-  },
-  коре: {
-    bg: "#ffffff",
-    parts: [{ type: "taegeuk" }, { type: "trigrams" }],
-  },
-  сша: {
-    bg: "#ffffff",
-    parts: [
-      {
-        type: "h",
-        colors: [
-          "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234",
-          "#ffffff", "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234",
-        ],
-      },
-      { type: "canton", color: "#3c3b6e" },
-      { type: "star", color: "#ffffff", count: 6 },
-    ],
-  },
-  америк: {
-    bg: "#ffffff",
-    parts: [
-      {
-        type: "h",
-        colors: [
-          "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234",
-          "#ffffff", "#b22234", "#ffffff", "#b22234", "#ffffff", "#b22234",
-        ],
-      },
-      { type: "canton", color: "#3c3b6e" },
-      { type: "star", color: "#ffffff", count: 6 },
-    ],
-  },
-  росси: { bg: "#ffffff", parts: [{ type: "h", colors: ["#ffffff", "#0039a6", "#d52b1e"] }] },
-  франц: { bg: "#ffffff", parts: [{ type: "v", colors: ["#0055a4", "#ffffff", "#ef4135"] }] },
-  герман: { bg: "#000000", parts: [{ type: "h", colors: ["#000000", "#dd0000", "#ffce00"] }] },
-  итал: { bg: "#ffffff", parts: [{ type: "v", colors: ["#009246", "#ffffff", "#ce2b37"] }] },
-  испан: {
-    bg: "#aa151b",
-    parts: [{ type: "h", colors: ["#aa151b", "#f1bf00", "#aa151b"], weights: [1, 2, 1] }],
-  },
-  великобритан: { bg: "#012169", parts: [{ type: "unionJack" }] },
-  англ: { bg: "#012169", parts: [{ type: "unionJack" }] },
-  канад: {
-    bg: "#ffffff",
-    parts: [{ type: "v", colors: ["#ff0000", "#ffffff", "#ff0000"] }, { type: "leaf", color: "#ff0000" }],
-  },
-  тайва: { bg: "#fe0000", parts: [{ type: "canton", color: "#000095" }] },
-  гонкон: { bg: "#de2910", parts: [{ type: "circle", color: "#ffffff" }] },
-  таиланд: {
-    bg: "#a51931",
-    parts: [{ type: "h", colors: ["#a51931", "#f4f5f8", "#2d2a4a", "#f4f5f8", "#a51931"] }],
-  },
-  инди: {
-    bg: "#ffffff",
-    parts: [{ type: "h", colors: ["#ff9933", "#ffffff", "#138808"] }, { type: "ring", color: "#000080" }],
-  },
-  бразил: { bg: "#009c3b", parts: [{ type: "diamond", color: "#ffdf00" }, { type: "circle", color: "#002776" }] },
-  австрал: {
-    bg: "#012169",
-    parts: [
-      { type: "canton", color: "#ffffff" },
-      { type: "unionJack", canton: true },
-      { type: "star", color: "#ffffff", count: 5, place: "fly" },
-    ],
-  },
-  польш: { bg: "#ffffff", parts: [{ type: "h", colors: ["#ffffff", "#dc143c"] }] },
-  турци: {
-    bg: "#e30a17",
-    parts: [{ type: "crescent", color: "#ffffff" }, { type: "star", color: "#ffffff", count: 1 }],
-  },
-  швеци: {
-    bg: "#006aa7",
-    parts: [{ type: "cross", color: "#fecc00" }],
-  },
-  нидерланд: { bg: "#ffffff", parts: [{ type: "h", colors: ["#ae1c28", "#ffffff", "#21468b"] }] },
+const COUNTRY_FLAGS: Record<string, string> = {
+  япон: "jp",
+  китай: "cn",
+  коре: "kr",
+  сша: "us",
+  америк: "us",
+  росси: "ru",
+  франц: "fr",
+  герман: "de",
+  итал: "it",
+  испан: "es",
+  великобритан: "gb",
+  англ: "gb",
+  канад: "ca",
+  тайва: "tw",
+  гонкон: "hk",
+  таиланд: "th",
+  инди: "in",
+  бразил: "br",
+  австрал: "au",
+  польш: "pl",
+  турци: "tr",
+  швеци: "se",
+  нидерланд: "nl",
 };
 
-// Возвращает описание флага или null, если страна незнакома
-export const countryFlagSpec = (country?: string | null): FlagSpec | null => {
+// Возвращает код флага (имя файла в public/flags) или null, если страна незнакома
+export const countryFlagCode = (country?: string | null): string | null => {
   if (!country) return null;
   const value = country.trim().toLowerCase().replace(/\s+/g, " ");
   if (!value) return null;
@@ -119,16 +42,21 @@ export const countryFlagSpec = (country?: string | null): FlagSpec | null => {
     value === "республика корея" ||
     value.startsWith("южная корея ")
   ) {
-    return FLAGS.коре;
+    return COUNTRY_FLAGS.коре;
   }
   if (value === "кндр" || value.includes("северн")) return null;
-  if (FLAGS[value]) return FLAGS[value];
-  for (const [key, spec] of Object.entries(FLAGS)) {
-    if (value.startsWith(key)) return spec;
+  if (COUNTRY_FLAGS[value]) return COUNTRY_FLAGS[value];
+  for (const [key, code] of Object.entries(COUNTRY_FLAGS)) {
+    if (value.startsWith(key)) return code;
   }
   return null;
 };
 
+// Путь к файлу флага для src или null, если страны нет в наборе
+export const countryFlagSrc = (country?: string | null): string | null => {
+  const code = countryFlagCode(country);
+  return code ? `/flags/${code}.svg` : null;
+};
+
 // Для текста (например, в title) — просто название страны без эмодзи
-export const hasCountryFlag = (country?: string | null) =>
-  Boolean(countryFlagSpec(country));
+export const hasCountryFlag = (country?: string | null) => Boolean(countryFlagCode(country));

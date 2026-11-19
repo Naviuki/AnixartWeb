@@ -1,6 +1,7 @@
 // Проверка соответствия флага названию страны: node scripts/country-flag-check.cjs
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 const React = require("react");
@@ -26,70 +27,70 @@ function loadTypeScript(file, mocks = {}) {
 }
 
 const flags = loadTypeScript("app/api/countryFlags.ts");
-const { countryFlagSpec } = flags;
-const korea = countryFlagSpec("Корея");
-const japan = countryFlagSpec("Япония");
-assert(korea, "Для Кореи должен быть флаг");
-assert(japan, "Для Японии должен быть флаг");
-assert.notDeepEqual(korea, japan, "Корея не должна получать японский флаг");
-assert(
-  korea.parts.some((part) => part.type === "taegeuk"),
-  "У флага Кореи должен быть красно-синий тэгык, а не сплошной красный круг"
-);
+const { countryFlagCode, countryFlagSrc } = flags;
+
+const korea = countryFlagCode("Корея");
+const japan = countryFlagCode("Япония");
+assert.equal(korea, "kr", "Корея должна получать флаг Южной Кореи");
+assert.equal(japan, "jp", "Япония должна получать флаг Японии");
+assert.notEqual(korea, japan, "Корея не должна получать японский флаг");
 for (const name of ["Южная Корея", "Республика Корея", "Южная корея", " ЮЖНАЯ КОРЕЯ "]) {
-  assert.deepEqual(countryFlagSpec(name), korea, `${name}: должен быть флаг Южной Кореи`);
+  assert.equal(countryFlagCode(name), "kr", `${name}: должен быть флаг Южной Кореи`);
 }
 for (const name of ["КНДР", "Северная Корея", "Неизвестная страна"]) {
-  assert.equal(countryFlagSpec(name), null, `${name}: нельзя подменять флаг Южной Кореей`);
+  assert.equal(countryFlagCode(name), null, `${name}: нельзя подменять флаг Южной Кореей`);
 }
 
 const { CountryFlag } = loadTypeScript("app/components/CountryFlag/CountryFlag.tsx", {
   "#/api/countryFlags": flags,
 });
-const koreaSvg = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Южная Корея", size: 44 }));
-const japanSvg = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Япония", size: 44 }));
-assert(koreaSvg.includes("#0047a0"), "В SVG Кореи должен быть синий тэгык");
-assert(koreaSvg.includes("#cd2e3a"), "В SVG Кореи должен быть красный тэгык");
-assert(koreaSvg.includes("trigrams") || koreaSvg.includes("rotate(33.69)"), "В SVG Кореи должны быть триграммы");
-assert(!japanSvg.includes("#0047a0"), "В SVG Японии не должно быть корейского тэгыка");
-
-// Остальные страны не должны опознаваться неверной фигурой
-const uk = countryFlagSpec("Великобритания");
-assert(uk.parts.some((part) => part.type === "unionJack"), "У Великобритании должен быть Юнион Джек");
-const ukSvg = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Великобритания", size: 44 }));
-assert(ukSvg.includes("#012169"), "У Юнион Джека должен быть синий фон");
-assert(ukSvg.includes("#c8102e"), "У Юнион Джека должен быть красный крест");
-assert(!ukSvg.includes("<circle"), "Красный круг вместо диагоналей у Юнион Джека недопустим");
-
-const turkey = countryFlagSpec("Турция");
-assert(turkey.parts.some((part) => part.type === "crescent"), "У Турции должен быть полумесяц");
-assert(turkey.parts.some((part) => part.type === "star"), "У Турции должна быть звезда");
-
-const brazil = countryFlagSpec("Бразилия");
-assert(brazil.parts.some((part) => part.type === "diamond"), "У Бразилии должен быть жёлтый ромб");
+const koreaHtml = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Южная Корея", size: 44 }));
+const japanHtml = renderToStaticMarkup(React.createElement(CountryFlag, { country: "Япония", size: 44 }));
+assert(koreaHtml.includes('src="/flags/kr.svg"'), "Флаг Кореи должен ссылаться на /flags/kr.svg");
+assert(japanHtml.includes('src="/flags/jp.svg"'), "Флаг Японии должен ссылаться на /flags/jp.svg");
+assert(!koreaHtml.includes("<circle"), "Ручная отрисовка флага больше не используется");
 assert(
-  brazil.parts.some((part) => part.type === "circle" && part.color === "#002776"),
-  "В ромбе Бразилии должен быть синий круг"
+  renderToStaticMarkup(React.createElement(CountryFlag, { country: "Неизвестная страна" })) === "",
+  "Для незнакомой страны флаг не рисуется"
 );
 
-const canada = countryFlagSpec("Канада");
-assert(canada.parts.some((part) => part.type === "leaf"), "У Канады должен быть кленовый лист");
-
-const china = countryFlagSpec("Китай");
-assert(china.parts.some((part) => part.type === "star" && part.count === 5), "У Китая должны быть пять звёзд");
-
-for (const name of ["США", "Америка"]) {
-  const stripes = countryFlagSpec(name).parts.find((part) => part.type === "h");
-  assert.equal(stripes.colors.length, 13, `У флага ${name} должно быть 13 полос`);
+// Каждый флаг — отдельный файл в public/flags, иначе на сайте будет битая картинка
+const expected = {
+  Япония: "jp",
+  Китай: "cn",
+  Корея: "kr",
+  США: "us",
+  Америка: "us",
+  Россия: "ru",
+  Франция: "fr",
+  Германия: "de",
+  Италия: "it",
+  Испания: "es",
+  Великобритания: "gb",
+  Англия: "gb",
+  Канада: "ca",
+  Тайвань: "tw",
+  Гонконг: "hk",
+  Таиланд: "th",
+  Индия: "in",
+  Бразилия: "br",
+  Австралия: "au",
+  Польша: "pl",
+  Турция: "tr",
+  Швеция: "se",
+  Нидерланды: "nl",
+};
+for (const [country, code] of Object.entries(expected)) {
+  assert.equal(countryFlagCode(country), code, `${country}: должен быть код ${code}`);
+  const src = countryFlagSrc(country);
+  assert.equal(src, `/flags/${code}.svg`, `${country}: путь к флагу ${src}`);
+  const file = path.join("public", "flags", `${code}.svg`);
+  assert(fs.existsSync(file), `${country}: нет файла ${file}`);
+  const svg = fs.readFileSync(file, "utf8");
+  assert(svg.trimStart().startsWith("<svg"), `${file}: должен быть SVG`);
+  assert(svg.includes("viewBox"), `${file}: у SVG должен быть viewBox`);
 }
-
-const spain = countryFlagSpec("Испания").parts.find((part) => part.type === "h");
-assert.equal(JSON.stringify(spain.weights), JSON.stringify([1, 2, 1]), "У Испании жёлтая полоса должна быть вдвое шире");
-
-const india = countryFlagSpec("Индия");
-assert(india.parts.some((part) => part.type === "ring"), "У Индии должна быть чакра");
-
-assert(countryFlagSpec("Австралия").parts.some((part) => part.type === "unionJack" && part.canton));
+assert(fs.existsSync("public/flags/LICENSE"), "Лицензия набора флагов должна лежать рядом с файлами");
 
 const { countryLanguage } = loadTypeScript("app/api/country.ts");
 for (const [country, language] of [
@@ -106,8 +107,8 @@ for (const country of ["Северная Корея", "КНДР", "Неизве�
   assert.equal(countryLanguage(country), "", `${country}: язык не должен выдумываться`);
 }
 for (const country of ["Япония", "Китай", "Южная Корея"]) {
-  assert(countryFlagSpec(country), `${country}: все страны фильтра должны иметь флаг`);
+  assert(countryFlagCode(country), `${country}: все страны фильтра должны иметь флаг`);
   assert(countryLanguage(country), `${country}: все страны фильтра должны иметь язык`);
 }
 
-console.log("Флаги: Корея отличается от Японии и в разметке, и в данных; страны фильтра и языки корректны");
+console.log("Флаги: страны получают верный код, файлы SVG на месте, Корея отличается от Японии");
