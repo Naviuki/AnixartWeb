@@ -310,10 +310,14 @@ async function main() {
     await send("Page.reload");
     await waitFor("(() => { const h = document.querySelector('#video-element'); const v = h?.shadowRoot?.querySelector('video') || h; return v && v.readyState >= 2 && v.duration >= 179; })()", 60000);
     const repairedOffsets = await evaluate(`[...document.querySelectorAll('media-seek-backward-button, media-seek-forward-button')].map(b => b.getAttribute('seekoffset'))`);
-    assert.deepEqual(repairedOffsets, ["10", "120", "3"]);
+    assert.deepEqual(repairedOffsets, ["10", "600", "3"]);
     await activate();
     await checkSeek(20, 10, "ArrowLeft", "ArrowLeft", 37);
-    await checkSeek(20, 140, "KeyL", "l", 76);
+    // Клавиша «вперёд» после починки осталась рабочей: шаг 600 с упирается в конец ролика
+    await setTime(20);
+    await press("KeyL", "l", 76);
+    await waitFor(`(() => { const h = document.querySelector('#video-element'); const v = h?.shadowRoot?.querySelector('video') || h; return v.currentTime >= 178 })()`, 10000);
+    console.log(`Перемотка KeyL: 20 → ${Math.round(await videoTime())} секунд (конец ролика)`);
 
     console.log("Клавиши: перемотка, пауза, громкость, звук, полный экран, PiP и серии проверены", { pip });
     console.log("Интервалы меняются, сохраняются и восстанавливаются после повреждения хранилища");

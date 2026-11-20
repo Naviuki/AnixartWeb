@@ -35,7 +35,7 @@ export const PLAYER_ACTIONS: {
   { action: "togglePlay", title: "Воспроизведение и пауза" },
   { action: "back", title: "Назад", hint: "на шаг назад" },
   { action: "forward", title: "Вперёд", hint: "на шаг вперёд" },
-  { action: "jump", title: "Большой шаг", hint: "пропуск заставки" },
+  { action: "jump", title: "Перемотка опенинга", hint: "пропуск заставки" },
   { action: "volumeUp", title: "Громче" },
   { action: "volumeDown", title: "Тише" },
   { action: "mute", title: "Звук" },
@@ -45,8 +45,13 @@ export const PLAYER_ACTIONS: {
   { action: "prevEpisode", title: "Предыдущая серия" },
 ];
 
-// Допустимые шаги перемотки: от 3 секунд до 2 минут
-export const SEEK_VALUES = [3, 5, 10, 15, 20, 30, 45, 60, 90, 120];
+// Границы шагов перемотки, в секундах. Шаг задаётся с точностью до секунды,
+// поэтому в настройках можно указать, например, 85 секунд.
+export const SEEK_MIN = 1;
+export const SEEK_MAX = 600;
+
+// Быстрый выбор в меню плеера; значение из настроек показывается рядом с ними
+export const SEEK_VALUES = [3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300];
 
 export const DEFAULT_SEEK: PlayerSeekSteps = {
   back: 10,
@@ -112,14 +117,10 @@ export const formatSeconds = (seconds: number) => {
 };
 
 const clampSeek = (value: unknown, fallback: number) => {
-  const step = Number(value);
+  const step = Math.round(Number(value));
   if (!Number.isFinite(step)) return fallback;
-  if (SEEK_VALUES.includes(step)) return step;
-  // Чужое сохранённое значение зажимаем в допустимые рамки
-  return Math.min(
-    SEEK_VALUES[SEEK_VALUES.length - 1],
-    Math.max(SEEK_VALUES[0], Math.round(step))
-  );
+  // Любая секунда в допустимых границах, а не только значения из списка
+  return Math.min(SEEK_MAX, Math.max(SEEK_MIN, step));
 };
 
 interface userPlayerPreferencesState {

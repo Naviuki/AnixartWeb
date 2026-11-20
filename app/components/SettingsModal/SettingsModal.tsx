@@ -3,7 +3,14 @@
 import { CURRENT_APP_VERSION } from "#/api/config";
 import { useUserStore } from "#/store/auth";
 import { usePreferencesStore } from "#/store/preferences";
-import { useUserPlayerPreferencesStore } from "#/store/player";
+import {
+  useUserPlayerPreferencesStore,
+  PLAYER_ACTIONS,
+  SEEK_MAX,
+  SEEK_MIN,
+  formatKey,
+  type PlayerAction,
+} from "#/store/player";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon } from "#/components/Icon/Icon";
@@ -34,6 +41,53 @@ const FifthButton = {
 
 type SectionId = "appearance" | "playback" | "notify" | "main" | "account";
 
+// Поле шага перемотки: набираем свободно, применяем по Enter или при уходе.
+// Иначе зажатое значение из хранилища не даёт стереть цифру и набрать новую.
+const SeekField = (props: {
+  title: string;
+  value: number;
+  onCommit: (seconds: number) => void;
+}) => {
+  const [draft, setDraft] = useState(String(props.value));
+
+  useEffect(() => {
+    setDraft(String(props.value));
+  }, [props.value]);
+
+  const commit = () => {
+    const parsed = Math.round(Number(draft.replace(",", ".")));
+    if (!Number.isFinite(parsed)) {
+      setDraft(String(props.value));
+      return;
+    }
+    const seconds = Math.min(SEEK_MAX, Math.max(SEEK_MIN, parsed));
+    setDraft(String(seconds));
+    props.onCommit(seconds);
+  };
+
+  return (
+    <input
+      type="number"
+      className="set-input"
+      inputMode="numeric"
+      aria-label={`${props.title}: шаг в секундах`}
+      min={SEEK_MIN}
+      max={SEEK_MAX}
+      step={1}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          commit();
+          (event.target as HTMLInputElement).blur();
+        }
+      }}
+    />
+  );
+};
+
 const SECTIONS: { id: SectionId; title: string; icon: string }[] = [
   { id: "appearance", title: "Внешний вид", icon: "sparkle" },
   { id: "playback", title: "Плеер", icon: "play" },
@@ -52,6 +106,7 @@ export const SettingsModal = (props: {
   const userStore = useUserStore();
   const [section, setSection] = useState<SectionId>("appearance");
   const [resetDone, setResetDone] = useState(false);
+  const [capturing, setCapturing] = useState<PlayerAction | null>(null);
 
   // Сброс выполняется целиком: флаг эксперимента и запомненные плееры
   const resetPlayer = () => {
@@ -64,8 +119,41 @@ export const SettingsModal = (props: {
   };
 
   useEffect(() => {
-    if (!props.isOpen) setResetDone(false);
+    if (!props.isOpen) {
+      setResetDone(false);
+      setCapturing(null);
+    }
   }, [props.isOpen]);
+
+  // Назначение клавиши: пока ждём, перехватываем нажатие целиком, чтобы
+  // стрелка не прокрутила модалку, а буква не ушла в поиск страницы
+  useEffect(() => {
+    if (!capturing) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setCapturing(null);
+        return;
+      }
+      // Один модификатор без основной клавиши не назначаем
+      if (["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const combo = [
+        event.ctrlKey && "Ctrl",
+        event.altKey && "Alt",
+        event.shiftKey && "Shift",
+        event.metaKey && "Meta",
+        event.code,
+      ]
+        .filter(Boolean)
+        .join("+");
+      useUserPlayerPreferencesStore.getState().setKey(capturing, combo);
+      setCapturing(null);
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [capturing]);
 
   if (!props.isOpen) return null;
 
@@ -197,6 +285,109 @@ export const SettingsModal = (props: {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="set-group">
+                  <div className="set-group-t">
+                    <Icon name="clock" size={18} />
+                    Перемотка
+                  </div>
+
+                  {(
+                    [
+                      {
+                        kind: "back",
+                        title: "Назад",
+                        hint: "Кнопка и клавиша шага назад",
+                      },
+                      {
+                        kind: "forward",
+                        title: "Вперёд",
+                        hint: "Кнопка и клавиша шага вперёд",
+                      },
+                      {
+                        kind: "jump",
+                        title: "Перемотка опенинга",
+                        hint: "Пропуск заставки одним нажатием",
+                      },
+                    ] as const
+                  ).map((item) => (
+                    <div className="set-row" key={item.kind}>
+                      <span className="set-body">
+                        <span className="set-t">{item.title}</span>
+                        <span className="set-s">{item.hint}</span>
+                      </span>
+                      <span className="set-num">
+                        <SeekField
+                          title={item.title}
+                          value={playerStore.seek[item.kind]}
+                          onCommit={(seconds) =>
+                            playerStore.setSeek(item.kind, seconds)
+                          }
+                        />
+                        с
+                      </span>
+                    </div>
+                  ))}
+                  <span className="set-s" style={{ padding: "0 10px" }}>
+                    Любая секунда от {SEEK_MIN} до {SEEK_MAX}: например, 85
+                  </span>
+                </div>
+
+                <div className="set-group">
+                  <div className="set-group-t">
+                    <Icon name="grid" size={18} />
+                    Горячие клавиши
+                  </div>
+
+                  <span className="set-s" style={{ padding: "0 10px 4px" }}>
+                    Работают, когда курсор над плеером или включён полный экран.
+                    Нажмите на клавишу и введите новую.
+                  </span>
+
+                  {PLAYER_ACTIONS.map(({ action, title, hint }) => (
+                    <div className="set-row" key={action}>
+                      <span className="set-body">
+                        <span className="set-t">{title}</span>
+                        {hint && <span className="set-s">{hint}</span>}
+                      </span>
+                      <button
+                        type="button"
+                        className={`set-key ${capturing === action ? "on" : ""}`}
+                        aria-label={`Клавиша для действия «${title}»`}
+                        onClick={() =>
+                          setCapturing(capturing === action ? null : action)
+                        }
+                      >
+                        {capturing === action ?
+                          "нажмите клавишу…"
+                        : formatKey(playerStore.keys[action])}
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="set-row"
+                    onClick={() => {
+                      playerStore.resetKeys();
+                      setCapturing(null);
+                    }}
+                  >
+                    <span className="set-ic">
+                      <Icon name="history" size={18} />
+                    </span>
+                    <span className="set-body">
+                      <span className="set-t">Сбросить клавиши</span>
+                      <span className="set-s">Вернуть стандартные сочетания</span>
+                    </span>
+                    <Icon name="chevron" size={16} />
+                  </button>
+
+                  <span className="set-s" style={{ padding: "0 10px" }}>
+                    Эти же клавиши и шаги перемотки есть в меню плеера —
+                    шестерёнка на панели управления
+                  </span>
                 </div>
 
                 <div className="set-group">

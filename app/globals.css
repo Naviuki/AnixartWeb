@@ -3837,6 +3837,57 @@ body[data-card="icon"] {
   outline: 2px solid var(--acc);
   outline-offset: 2px;
 }
+/* Настройки плеера: точный шаг перемотки и назначение клавиши */
+.set-num {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--t3);
+}
+.set-input {
+  width: 86px;
+  background: var(--s2);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 7px 10px;
+  color: var(--t1);
+  font-size: 13px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.set-input:focus {
+  border-color: var(--acc);
+}
+.set-input:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+.set-key {
+  margin-left: auto;
+  flex: none;
+  min-width: 120px;
+  max-width: 52%;
+  background: var(--s2);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 7px 10px;
+  color: var(--t1);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.set-key:hover {
+  border-color: var(--acc);
+}
+.set-key.on {
+  border-color: var(--acc);
+  color: var(--acc);
+}
 .set-row-mob {
   display: none !important;
 }
