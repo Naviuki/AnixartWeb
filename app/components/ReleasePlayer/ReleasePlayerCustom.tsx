@@ -84,16 +84,20 @@ const PlaybackRateMenu = (props: {
   );
 };
 
-// Шаг перемотки выбирается из готового списка: произвольное число на сенсоре не набрать
+// Шаг перемотки выбирается из готового списка: произвольное число на сенсоре не набрать.
+// Точное значение из настроек добавляем в список, чтобы его было видно и можно было вернуть.
 const SeekMenu = (props: {
   title: string;
   value: number;
   onPick: (seconds: number) => void;
 }) => {
+  const values = Array.from(new Set([...SEEK_VALUES, props.value])).sort(
+    (a, b) => a - b
+  );
   return (
     <MediaChromeMenu slot="submenu" hidden>
       <div slot="title">{props.title}</div>
-      {SEEK_VALUES.map((seconds) => (
+      {values.map((seconds) => (
         <MediaChromeMenuItem
           key={`seek_${seconds}`}
           value={String(seconds)}
@@ -134,7 +138,11 @@ const KeysMenu = (props: {
         >
           <span className="flex flex-col text-left">
             <span>{title}</span>
-            {hint && <span className="text-[11px] opacity-60">{hint}</span>}
+            {hint && (
+              <span className={`${Styles["media-key-hint"]} text-[11px] opacity-60`}>
+                {hint}
+              </span>
+            )}
           </span>
           <span className="ml-auto pl-3 text-[12px] opacity-80">
             {props.capturing === action
@@ -276,6 +284,8 @@ export const ReleasePlayerCustom = (props: {
 
   const [retryCount, setRetryCount] = useState(0);
   const frameRef = useRef<HTMLDivElement>(null);
+  const controllerRef = useRef<any>(null);
+  const barRef = useRef<any>(null);
   const [isHovered, setIsHovered] = useState(false);
   // Действие, для которого сейчас ждём нажатие клавиши
   const [capturing, setCapturing] = useState<PlayerAction | null>(null);
@@ -285,6 +295,38 @@ export const ReleasePlayerCustom = (props: {
   const setKey = useUserPlayerPreferencesStore((state) => state.setKey);
   const resetKeys = useUserPlayerPreferencesStore((state) => state.resetKeys);
 
+
+  // Высота панели управления: на узком экране она переносится на две-три
+  // строки, и меню настроек должно освободить её целиком, а не на глазок
+  useEffect(() => {
+    const controller = controllerRef.current;
+    const bar = barRef.current;
+    if (!controller || !bar) return;
+    const sync = () => {
+      controller.style.setProperty("--bar-height", `${bar.offsetHeight}px`);
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, []);
+
+  // Меню раскрывается внутри кадра, поэтому кадр должен быть виден целиком:
+  // иначе лист окажется под нижним краем экрана
+  useEffect(() => {
+    const menu = document.getElementById("settings");
+    const frame = frameRef.current;
+    if (!menu || !frame) return;
+    const observer = new MutationObserver(() => {
+      if (menu.hasAttribute("hidden")) return;
+      const rect = frame.getBoundingClientRect();
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        frame.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    });
+    observer.observe(menu, { attributes: true, attributeFilter: ["hidden"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -662,6 +704,7 @@ export const ReleasePlayerCustom = (props: {
     >
       <div className="flex items-center justify-center w-full h-full">
         <MediaController
+          ref={controllerRef}
           breakpoints="md:480"
           defaultStreamType="on-demand"
           className={`relative w-full overflow-hidden ${Styles["media-controller"]}`}
@@ -814,9 +857,9 @@ export const ReleasePlayerCustom = (props: {
             <MediaSettingsMenuItem
               className={`${Styles["media-settings-menu-item"]}`}
             >
-              Большой шаг · {seek.jump} с
+              Перемотка опенинга · {seek.jump} с
               <SeekMenu
-                title="Пропустить сразу"
+                title="Пропустить опенинг"
                 value={seek.jump}
                 onPick={(seconds) => setSeek("jump", seconds)}
               />
@@ -878,7 +921,10 @@ export const ReleasePlayerCustom = (props: {
               <p>Выбор доступен только в горизонтальном режиме</p>
             </div>
           </MediaChromeDialog>
-          <MediaControlBar className={`${Styles["media-control-bar"]}`}>
+          <MediaControlBar
+            ref={barRef}
+            className={`${Styles["media-control-bar"]}`}
+          >
             <MediaChromeButton
               className={`${Styles["media-button"]} ${Styles["media-episode-step"]} w-[calc(2*var(--base))] z-[2]`}
               aria-label="Предыдущая серия"
@@ -1078,7 +1124,7 @@ export const ReleasePlayerCustom = (props: {
               </svg>
             </MediaSeekForwardButton>
             <MediaSettingsMenuButton
-              className={`${Styles["media-button"]}`}
+              className={`${Styles["media-button"]} ${Styles["media-source-menu-button"]}`}
               {...({ invoketarget: "source" } as any)}
             >
               Выбор озвучки, источника и серии

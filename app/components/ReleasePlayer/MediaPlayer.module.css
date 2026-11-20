@@ -45,6 +45,8 @@
   bottom: calc(1 * var(--base));
   left: var(--base);
   right: var(--base);
+  /* Панель остаётся над меню настроек на узком экране */
+  z-index: 2;
 }
 
 .media-button {
@@ -141,16 +143,20 @@
   padding-block: calc(0.5 * var(--base));
   border-radius: 8px;
   user-select: none;
-  /* Настройки всегда открываются листом у нижнего края: у низкого окна
-     и при прокрутке меню у кнопки уезжает за край экрана */
-  position: fixed !important;
-  inset: auto 8px calc(3 * var(--base)) 8px !important;
+  /* Меню живёт внутри плеера и открывается над панелью управления рядом
+     с кнопкой настроек, а не в углу страницы. Высота ограничена размерами
+     плеера, поэтому лист не вылезает за его рамку ни при прокрутке, ни
+     в полноэкранном режиме. */
+  position: absolute !important;
+  inset: auto calc(0.5 * var(--base)) calc(3 * var(--base)) calc(0.5 * var(--base)) !important;
   width: auto !important;
   min-width: 0 !important;
+  --_menu-max: min(56vh, 320px, calc(100% - 5 * var(--base)));
   /* Высоту задаёт переменная media-chrome, иначе лист обрезается её замером */
-  --media-menu-max-height: min(56vh, 320px);
+  --media-menu-max-height: var(--_menu-max);
+  --media-menu-overflow: auto;
   background: rgb(16 16 18) !important;
-  max-height: min(56vh, 320px);
+  max-height: var(--_menu-max);
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0 !important;
@@ -160,7 +166,7 @@
 /* Пока открыто подменю, лист держит высоту списка: иначе он сжимается
    до двух строк родителя, и параметры не видно */
 .media-settings-menu:has([slot="submenu"]:not([hidden])) {
-  height: min(56vh, 320px);
+  height: var(--_menu-max);
 }
 
 /* Подменю раскрывается поверх листа: внутренний список уезжает влево
@@ -176,9 +182,10 @@
   inset: auto 0 0 0 !important;
   width: auto !important;
   max-width: none !important;
-  height: min(56vh, 320px) !important;
+  height: var(--_menu-max) !important;
   max-height: none !important;
   --media-menu-max-height: 100%;
+  --media-menu-overflow: auto;
   background: rgb(16 16 18) !important;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -190,19 +197,12 @@
   display: none !important;
 }
 
-/* На широком экране лист компактный, у правого края */
+/* На широком экране лист компактный, у правого края над панелью управления */
 @media (min-width: 640px) {
   .media-settings-menu {
-    inset: auto 12px 12px auto !important;
+    inset: auto 12px calc(3 * var(--base)) auto !important;
     width: min(22rem, calc(100% - 24px)) !important;
-    --media-menu-max-height: min(60vh, 24rem);
-    max-height: min(60vh, 24rem);
-  }
-  .media-settings-menu:has([slot="submenu"]:not([hidden])) {
-    height: min(60vh, 24rem);
-  }
-  .media-settings-menu [slot="submenu"] {
-    height: min(60vh, 24rem) !important;
+    --_menu-max: min(60vh, 24rem, calc(100% - 5 * var(--base)));
   }
 }
 
@@ -301,11 +301,51 @@
   }
 }
 
-/* Тесно по ширине: переключение серий остаётся в меню выбора серии */
+/* Тесно по ширине: переключение серий, прыжок и ползунок громкости
+   остаются на десктопе, а на телефоне громкость меняют кнопкой звука.
+   Выбор озвучки и источника в портретной ориентации недоступен (диалог
+   просит повернуть телефон), поэтому его кнопка не занимает место. */
 @media (max-width: 480px) {
   .media-episode-step,
   .media-forward-jump,
-  .media-time-display {
+  .media-time-display,
+  .media-volume-range-wrapper,
+  .media-source-menu-button {
+    display: none;
+  }
+}
+
+/* Узкий плеер: настройки занимают весь кадр, а панель управления остаётся
+   поверх листа и закрывает его повторным нажатием. Низ листа освобождает
+   столько места, сколько панель реально занимает (--bar-height), потому что
+   на телефоне она может переноситься на несколько строк. */
+@media (max-width: 639px) {
+  .media-settings-menu {
+    inset: 0 !important;
+    width: auto !important;
+    --_menu-max: 100%;
+    max-height: 100%;
+    z-index: 1;
+    line-height: 1.3;
+    padding-bottom: calc(var(--bar-height, 5 * var(--base)) + var(--base));
+  }
+  .media-settings-menu:has([slot="submenu"]:not([hidden])) {
+    height: 100%;
+  }
+  .media-settings-menu [slot="submenu"] {
+    inset: 0 !important;
+    height: 100% !important;
+    line-height: 1.3;
+  }
+  /* Заголовок подменю на телефоне компактнее: иначе в низком плеере
+     под ним остаётся меньше одной строки списка */
+  .media-settings-menu [slot="submenu"] [slot="title"] {
+    padding: 2px 8px;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  /* В низком плеере строка клавиши должна занимать одну строку целиком */
+  .media-settings-menu .media-key-hint {
     display: none;
   }
 }
@@ -321,10 +361,31 @@
   }
 }
 
-/* Мало места по высоте: лист ниже и уже, чтобы кнопки управления остались видны */
-@media (max-height: 620px) {
+/* Совсем тесная панель: полоса перемотки сжимается, а отступы по краям
+   уменьшаются, лишь бы все кнопки остались в одной строке */
+@media (max-width: 480px) {
+  .media-control-bar {
+    flex-wrap: nowrap;
+    left: calc(var(--base) / 2);
+    right: calc(var(--base) / 2);
+  }
+  .media-time-range {
+    min-width: 32px;
+  }
+}
+
+/* Совсем узкий кадр (телефон с сильным увеличением): полоса перемотки
+   ужимается до предела, чтобы все шесть кнопок остались в одной строке */
+@media (max-width: 300px) {
+  .media-time-range {
+    min-width: 18px;
+  }
+}
+
+/* Мало места по высоте: лист ниже, чтобы кнопки управления остались видны */
+@media (min-width: 640px) and (max-height: 620px) {
   .media-settings-menu {
-    max-height: min(70vh, 240px);
+    --_menu-max: min(70vh, 240px, calc(100% - 5 * var(--base)));
   }
 }
 
