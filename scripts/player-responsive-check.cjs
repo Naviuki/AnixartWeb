@@ -182,6 +182,7 @@ async function main() {
             right: Math.round(rect.right),
             bottom: Math.round(rect.bottom),
             view: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
+            sliderColor: getComputedStyle(panel).scrollbarColor,
           };
         };
         const button = document.querySelector('[class*=media-settings-menu-button]');
@@ -209,6 +210,13 @@ async function main() {
         const keysNode = keysItem.querySelector('[slot=submenu]');
         const keys = keysNode && !keysNode.hasAttribute('hidden') ? measure(keysNode) : { error: 'меню клавиш не открылось' };
         if (!keys.error) {
+          // Подсказки в строках не должны раздувать высоту: на телефоне строка
+          // клавиши стоит одну строку, на десктопе — не больше двух
+          const rows = [...keysNode.querySelectorAll('media-chrome-menu-item')];
+          const heights = [...new Set(rows.map((row) => Math.round(row.getBoundingClientRect().height)))];
+          keys.heights = heights;
+          const hinted = rows.find((row) => row.querySelector('[class*=media-key-hint]'));
+          keys.hintRows = hinted ? Math.round(hinted.getBoundingClientRect().height) : 0;
           const last = keysNode.querySelector('media-chrome-menu-item:last-child');
           last.scrollIntoView({ block: 'nearest' });
           await new Promise((resolve) => setTimeout(resolve, 200));
@@ -232,12 +240,23 @@ async function main() {
       assert.equal(result.clipped.length, 0, `${name}: обрезаны ${result.clipped.map((b) => b.label).join(", ")}`);
       assert.equal(result.smallButtons.length, 0, `${name}: мелкие цели ${result.smallButtons.map((b) => `${b.label} ${b.width}x${b.height}`).join(", ")}`);
       assert.equal(result.menu.error, undefined, `${name}: ${result.menu.error}`);
+      // Лист настроек не светлее панели плеера: тёмная полоса прокрутки не
+      // должна читаться как обрезанная рамка
+      if (!result.menu.main.sliderColor || result.menu.main.sliderColor === "auto") {
+        assert.fail(`${name}: у листа настроек системная полоса прокрутки (${result.menu.main.sliderColor})`);
+      }
       for (const [label, panel] of [["меню", result.menu.main], ["подменю", result.menu.submenu], ["клавиши", result.menu.keys]]) {
         assert.ok(panel, `${name}: ${label} не измерено`);
         assert.equal(panel.error, undefined, `${name}: ${panel.error}`);
         assert.ok(panel.left >= 0 && panel.right <= panel.view.width + 1, `${name}: ${label} вылезает по ширине (${panel.left}..${panel.right} из ${panel.view.width})`);
         assert.ok(panel.top >= 0 && panel.bottom <= panel.view.height + 1, `${name}: ${label} вылезает по высоте (${panel.top}..${panel.bottom} из ${panel.view.height})`);
-        if (label === "клавиши") assert.equal(panel.lastVisible, true, `${name}: последний пункт клавиш недоступен прокруткой`);
+        if (label === "клавиши") {
+          assert.equal(panel.lastVisible, true, `${name}: последний пункт клавиш недоступен прокруткой`);
+          assert.ok(panel.heights.length <= 2, `${name}: строки клавиш разной высоты (${panel.heights.join(", ")})`);
+          if (result.viewport.width < 640) {
+            assert.ok(panel.hintRows <= 30, `${name}: строка клавиши с подсказкой раздулась до ${panel.hintRows}px`);
+          }
+        }
       }
     }
     console.log("Плеер: переполнений нет, цели не мельче порога, меню влезает на всех экранах");

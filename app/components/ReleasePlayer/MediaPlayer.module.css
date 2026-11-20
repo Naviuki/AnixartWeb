@@ -161,6 +161,12 @@
   overscroll-behavior: contain;
   margin: 0 !important;
   z-index: 60;
+  /* Полоса прокрутки тёмная и узкая: светлая системная полоса вылезала
+     из скруглённого листа и читалась как обрезанная рамка. Значения
+     наследуются во внутренний список media-chrome */
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
+  scrollbar-gutter: stable;
 }
 
 /* Пока открыто подменю, лист держит высоту списка: иначе он сжимается
@@ -192,6 +198,8 @@
   margin: 0 !important;
   transform: none !important;
   translate: 100% 0 !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.28) transparent;
 }
 .media-settings-menu [slot="submenu"][hidden] {
   display: none !important;
@@ -344,8 +352,11 @@
     font-size: 13px;
     line-height: 1.2;
   }
-  /* В низком плеере строка клавиши должна занимать одну строку целиком */
-  .media-settings-menu .media-key-hint {
+  /* В низком плеере строка клавиши должна занимать одну строку целиком.
+     Подсказки живут в пункте media-chrome-menu-item, поэтому правило
+     нужно и для этого элемента, и для его слота */
+  .media-settings-menu .media-key-hint,
+  .media-settings-menu media-chrome-menu-item .media-key-hint {
     display: none;
   }
 }
