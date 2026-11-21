@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ENDPOINTS } from "#/api/config";
+import { tryCatchAPI } from "#/api/utils";
+import { toast } from "react-toastify";
 import { Icon } from "#/components/Icon/Icon";
 
 export const CommentsEditModal = (props: {
@@ -9,6 +11,7 @@ export const CommentsEditModal = (props: {
   token: string;
   setShouldRender?: any;
   setCommentSend?: any;
+  onSuccess?: (comment: any) => void;
   type?: "release" | "collection";
 }) => {
   const [message, setMessage] = useState(props.parentComment.message);
@@ -30,17 +33,31 @@ export const CommentsEditModal = (props: {
       } else {
         url = `${ENDPOINTS.release.info}/comment/edit/${props.parentComment.id}?token=${props.token}`;
       }
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const { error } = await tryCatchAPI(
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+      );
+
+      if (error) {
+        toast.error("Не удалось изменить комментарий. Попробуйте ещё раз.");
+        setIsSending(false);
+        return;
+      }
 
       if (props.setShouldRender && props.setCommentSend) {
         props.setShouldRender(true);
         props.setCommentSend(true);
       }
 
+      props.onSuccess?.({
+        ...props.parentComment,
+        message: data.message,
+        isSpoiler: isSpoiler,
+        isEdited: true,
+      });
       props.setIsOpen(false);
       setIsSending(false);
     }

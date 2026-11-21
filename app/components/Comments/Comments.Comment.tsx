@@ -6,6 +6,8 @@ import Link from "next/link";
 import { CommentsAddModal } from "./Comments.Add";
 import { CommentsEditModal } from "./Comments.Edit";
 import { useUserStore } from "#/store/auth";
+import { tryCatchAPI } from "#/api/utils";
+import { toast } from "react-toastify";
 import { Icon } from "#/components/Icon/Icon";
 
 export const CommentsComment = (props: {
@@ -43,6 +45,8 @@ export const CommentsComment = (props: {
 
   const [shouldRender, setShouldRender] = useState(true);
   const [commentSend, setCommentSend] = useState(false);
+  const [message, setMessage] = useState(props.comment.message);
+  const [isDeleted, setIsDeleted] = useState(props.comment.isDeleted);
 
   let parentCommentId: number | null = null;
   if (props.parentComment) {
@@ -57,8 +61,13 @@ export const CommentsComment = (props: {
       } else {
         url = `${ENDPOINTS.release.info}/comment/delete/${props.comment.id}?token=${props.token}`;
       }
-      await fetch(url);
+      const { error } = await tryCatchAPI(fetch(url));
+      if (error) {
+        toast.error("Не удалось удалить комментарий. Попробуйте ещё раз.");
+        return;
+      }
 
+      setIsDeleted(true);
       if (props.setShouldRender && props.setCommentSend) {
         props.setShouldRender(true);
         props.setCommentSend(true);
@@ -175,7 +184,7 @@ export const CommentsComment = (props: {
               {sinceUnixDate(props.comment.timestamp)}
             </time>
           </span>
-          {user && props.profile.id == user.id && (
+          {user && props.profile.id == user.id && !isDeleted && (
             <span style={{ marginLeft: "auto" }}>
               <Dropdown
                 label=""
@@ -203,9 +212,7 @@ export const CommentsComment = (props: {
         </div>
 
         <div className="comment-text">
-          {!props.comment.isDeleted ?
-            props.comment.message
-          : "Комментарий был удалён."}
+          {!isDeleted ? message : "Комментарий был удалён."}
           {isHidden && (
             <button
               type="button"
@@ -222,7 +229,7 @@ export const CommentsComment = (props: {
           )}
         </div>
 
-        {!props.isReplying && !props.comment.isDeleted && (
+        {!props.isReplying && !isDeleted && (
           <div className="comment-foot">
             {props.token ?
               <button type="button" onClick={() => setIsAddCommentsOpen(true)}>
@@ -303,6 +310,12 @@ export const CommentsComment = (props: {
           parentComment={props.comment}
           setShouldRender={props.setShouldRender || setShouldRender}
           setCommentSend={props.setCommentSend || setCommentSend}
+          onSuccess={(updated) => {
+            setMessage(updated.message);
+            setIsHidden(
+              updated.isSpoiler || props.comment.likes_count < -5
+            );
+          }}
           type={props.type}
         />
       )}

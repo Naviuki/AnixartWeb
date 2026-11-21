@@ -1,6 +1,8 @@
 import { CommentsComment } from "./Comments.Comment";
 import { useState } from "react";
 import { ENDPOINTS } from "#/api/config";
+import { tryCatchAPI } from "#/api/utils";
+import { toast } from "react-toastify";
 import { Icon } from "#/components/Icon/Icon";
 
 export const CommentsAddModal = (props: {
@@ -13,6 +15,7 @@ export const CommentsAddModal = (props: {
   token: string;
   setShouldRender?: any;
   setCommentSend?: any;
+  onSuccess?: (comment?: any) => void;
   type?: "release" | "collection";
 }) => {
   const [message, setMessage] = useState(
@@ -40,17 +43,26 @@ export const CommentsAddModal = (props: {
         url = `${ENDPOINTS.release.info}/comment/add/${props.release_id}?token=${props.token}`;
       }
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      const { data: response, error } = await tryCatchAPI(
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+      );
+
+      if (error) {
+        toast.error("Не удалось отправить комментарий. Попробуйте ещё раз.");
+        setIsSending(false);
+        return;
+      }
 
       if (props.isReply && props.setShouldRender && props.setCommentSend) {
         props.setShouldRender(true);
         props.setCommentSend(true);
       }
 
+      props.onSuccess?.(response?.comment);
       setMessage(props.isReply ? `${props.parentProfile.login}, ` : "");
       setIsSpoiler(false);
       props.setIsOpen(false);

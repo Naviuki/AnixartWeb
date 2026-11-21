@@ -16,6 +16,18 @@ export const CommentsMain = (props: {
   const [isAllCommentsOpen, setIsAllCommentsOpen] = useState(false);
   const [isAddCommentsOpen, setIsAddCommentsOpen] = useState(false);
   const type = props.type || "release";
+  const [addedComments, setAddedComments] = useState<any[]>([]);
+  const remoteComments = props.comments || [];
+  const comments = [
+    ...addedComments.filter(
+      (added) => !remoteComments.some((comment) => comment.id === added.id)
+    ),
+    ...remoteComments,
+  ];
+
+  useEffect(() => {
+    setAddedComments([]);
+  }, [props.release_id, type]);
 
   return (
     <>
@@ -44,8 +56,8 @@ export const CommentsMain = (props: {
         </div>
 
         <div>
-          {props.comments && props.comments.length > 0 ?
-            props.comments.map((comment: any) => (
+          {comments.length > 0 ?
+            comments.map((comment: any) => (
               <CommentsComment
                 key={comment.id}
                 release_id={props.release_id}
@@ -76,19 +88,26 @@ export const CommentsMain = (props: {
         </div>
       </div>
 
-      <CommentsAllModal
-        isOpen={isAllCommentsOpen}
-        setIsOpen={setIsAllCommentsOpen}
-        release_id={props.release_id}
-        token={props.token}
-        type={props.type}
-      />
+      {isAllCommentsOpen && (
+        <CommentsAllModal
+          isOpen={isAllCommentsOpen}
+          setIsOpen={setIsAllCommentsOpen}
+          release_id={props.release_id}
+          token={props.token}
+          type={props.type}
+        />
+      )}
       <CommentsAddModal
         isOpen={isAddCommentsOpen}
         setIsOpen={setIsAddCommentsOpen}
         release_id={props.release_id}
         token={props.token}
         type={props.type}
+        onSuccess={(comment) => {
+          if (comment) {
+            setAddedComments((current) => [comment, ...current]);
+          }
+        }}
       />
     </>
   );
