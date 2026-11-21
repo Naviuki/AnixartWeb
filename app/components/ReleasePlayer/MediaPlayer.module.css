@@ -34,6 +34,15 @@
   --base: 24px;
 }
 
+/* Если :fullscreen в браузере сработал, кадр занимает весь экран и не
+   теряет фон: иначе вокруг видео просвечивает страница */
+.media-controller:fullscreen,
+.media-controller:-webkit-full-screen {
+  width: 100% !important;
+  height: 100% !important;
+  background: #000;
+}
+
 .media-controller:not([mediaisfullscreen]) {
   border-radius: 8px;
 }
