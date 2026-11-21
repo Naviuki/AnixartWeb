@@ -23,8 +23,15 @@ export async function getSibnetURL(req, res, url: string) {
             "User-Agent": user_agent,
         },
     });
-    if (!pageRes || !pageRes.ok) {
-        asJSON(req, res, { message: `SIBNET: Не удалось загрузить страницу с плеером` }, 500)
+    if (!pageRes) {
+        asJSON(req, res, { message: `SIBNET: Не удалось подключиться к серверу` }, 500)
+        return
+    }
+    if (!pageRes.ok) {
+        const message = pageRes.status === 403 ?
+            "SIBNET: Доступ к странице плеера запрещён (HTTP 403)"
+        : `SIBNET: Не удалось загрузить страницу с плеером (HTTP ${pageRes.status})`
+        asJSON(req, res, { message }, 500)
         return
     }
     const pageData = await pageRes.text();

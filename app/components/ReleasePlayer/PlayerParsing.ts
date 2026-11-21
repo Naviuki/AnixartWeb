@@ -70,7 +70,11 @@ export async function _fetchPlayer(
     if (error.message === "ПЛЕЕР_НЕ_ЗАПУЩЕН") {
       errorDetail =
         "Локальный парсер источников не запущен. Перезапустите сайт ярлыком «AniX (локально)» — парсер поднимется вместе с ним.";
-    } else if (/^KODIK|^SIBNET|^LIBRIA/i.test(error.message || "")) {
+    } else if (/^SIBNET/i.test(error.message || "")) {
+      message = "Sibnet не отдал видео";
+      const reason = error.message.replace(/[.\s]+$/, "");
+      errorDetail = `${reason}. Выберите другой источник в меню «Плеер» или другую озвучку — при блокировке Sibnet повторный запрос может не помочь.`;
+    } else if (/^KODIK|^LIBRIA/i.test(error.message || "")) {
       // Плеер источника не отдал ссылку: чаще всего видео снято или
       // провайдер блокирует запросы. Предлагаем проверенный путь.
       message = "Источник не отдал видео";

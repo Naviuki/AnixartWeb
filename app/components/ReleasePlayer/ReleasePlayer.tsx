@@ -570,6 +570,19 @@ export const ReleasePlayer = (props: { id: number }) => {
           </div>}
       </div>
 
+      {direct.status === "failed" &&
+        selectedSource?.name?.toLowerCase().includes("sibnet") &&
+        rate === 1 && (
+          <div className="player-state-note" role="status">
+            <Icon name="info" size={16} />
+            <span>
+              Прямой поток Sibnet недоступен, поэтому открыт iframe источника.
+              Если видео в нём не появилось, выберите другой источник в меню
+              «Плеер» выше.
+            </span>
+          </div>
+        )}
+
       {state === "ready" && episodes.length > 0 && (
         <div className="epgrid" style={{ marginTop: 10 }}>
           {episodes.map((episode) => {
