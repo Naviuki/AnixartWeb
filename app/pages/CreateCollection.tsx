@@ -77,22 +77,35 @@ export const CreateCollectionPage = () => {
     async function _checkMode() {
       if (mode === "edit" && collection_id) {
         setIsSending(true);
-        const res = await fetch(
-          `${ENDPOINTS.collection.base}/${collection_id}?token=${userStore.token}`
+        const showLoadError = () => {
+          setIsSending(false);
+          toast.error("Не удалось загрузить коллекцию. Попробуйте ещё раз.");
+          router.replace(`/collection/${collection_id}`);
+        };
+        const { data, error } = await tryCatchAPI(
+          fetch(`${ENDPOINTS.collection.base}/${collection_id}?token=${userStore.token}`)
         );
-        const data = await res.json();
+        if (error || !data?.collection) {
+          showLoadError();
+          return;
+        }
 
         let addedReleasesIdsArray = [];
         let addedReleasesArray = [];
 
         for (let i = 0; i < 4; i++) {
-          const res = await fetch(
-            `${ENDPOINTS.collection.base}/${collection_id}/releases/${i}?token=${userStore.token}`
+          const { data: releasesData, error: releasesError } = await tryCatchAPI(
+            fetch(
+              `${ENDPOINTS.collection.base}/${collection_id}/releases/${i}?token=${userStore.token}`
+            )
           );
-          const data = await res.json();
+          if (releasesError || !Array.isArray(releasesData?.content)) {
+            showLoadError();
+            return;
+          }
 
-          if (data.content.length > 0) {
-            data.content.forEach((release) => {
+          if (releasesData.content.length > 0) {
+            releasesData.content.forEach((release) => {
               if (!addedReleasesIds.includes(release.id)) {
                 addedReleasesIdsArray.push(release.id);
                 addedReleasesArray.push(release);
