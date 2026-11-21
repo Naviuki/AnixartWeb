@@ -253,6 +253,10 @@ export const ReleasePlayerCustom = (props: {
   title: string;
   token: string | null;
 }) => {
+  // Причина последней неудачи при получении ссылки. Хранится в ref: смена
+  // озвучки обнуляет playerError и перезапускает цепочку, а без неё ошибка
+  // пропадала бы молча — видео просто не появлялось
+  const failedManifest = useRef<string | null>(null);
   const [voiceover, setVoiceover] = useState({
     selected: null,
     available: null,
@@ -339,12 +343,16 @@ export const ReleasePlayerCustom = (props: {
     const setManifest = (manifest, poster, type: "hls" | "mp4") => {
       if (!active) return;
       if (manifest) {
+        failedManifest.current = null;
+        setPlayerError(null);
         SetPlayerProps({ src: manifest, poster, type });
         return;
       }
+      failedManifest.current =
+        "Парсер не вернул ссылку на поток. Попробуйте другую озвучку, источник или обычный плеер.";
       setPlayerError((current) => current || {
         message: "Источник не отдал видео",
-        detail: "Парсер не вернул ссылку на поток. Попробуйте другую озвучку, источник или обычный плеер.",
+        detail: failedManifest.current,
       });
     };
 
@@ -364,6 +372,16 @@ export const ReleasePlayerCustom = (props: {
       }
 
       if (selectedSource.name == "Kodik") {
+        // Прямую ссылку на поток парсер не обрабатывает: у него нет
+        // страницы Kodik, которую можно разобрать
+        if (/\.m3u8(\?|$)/i.test(selectedEpisode.url)) {
+          setManifest(selectedEpisode.url, null, "hls");
+          return;
+        }
+        if (/\.mp4(\?|$)/i.test(selectedEpisode.url)) {
+          setManifest(selectedEpisode.url, null, "mp4");
+          return;
+        }
         const { manifest, poster } = await _fetchKodikManifest(
           selectedEpisode.url,
           setCurrentPlayerError
@@ -403,7 +421,6 @@ export const ReleasePlayerCustom = (props: {
       }
     };
 
-    setPlayerError(null);
     SetPlayerProps({ src: null, poster: null, type: null });
     const loadingTimeout = selectedEpisode ?
       window.setTimeout(__getInfo, 250)
@@ -522,8 +539,8 @@ export const ReleasePlayerCustom = (props: {
       setSource({ selected: null, available: null });
       setEpisode({ selected: null, available: null });
       SetPlayerProps({ src: null, poster: null, type: null });
-      setPlayerError(null);
       setIsErrorDetailsOpen(false);
+      failedManifest.current = null;
     }
     setVoiceover(next);
   }
@@ -532,7 +549,6 @@ export const ReleasePlayerCustom = (props: {
     if (source.selected?.id !== next.selected?.id) {
       setEpisode({ selected: null, available: null });
       SetPlayerProps({ src: null, poster: null, type: null });
-      setPlayerError(null);
       setIsErrorDetailsOpen(false);
     }
     setSource(next);
@@ -773,7 +789,13 @@ export const ReleasePlayerCustom = (props: {
                 <button
                   type="button"
                   className="btn g sm"
-                  onClick={() => setRetryCount(retryCount + 1)}
+                  onClick={() => {
+                    // Повтор — новая попытка: старая причина больше не нужна
+                    failedManifest.current = null;
+                    setPlayerError(null);
+                    setIsErrorDetailsOpen(false);
+                    setRetryCount(retryCount + 1);
+                  }}
                 >
                   Повторить
                 </button>

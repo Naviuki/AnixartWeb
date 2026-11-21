@@ -2,7 +2,7 @@
 const assert = require("node:assert/strict");
 const { spawnSync } = require("node:child_process");
 const { createServer } = require("node:http");
-const { existsSync, mkdtempSync, readFileSync, statSync } = require("node:fs");
+const { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } = require("node:fs");
 const { join } = require("node:path");
 const { tmpdir } = require("node:os");
 
@@ -18,6 +18,7 @@ async function startPlayerTestMedia(port) {
   const directory = mkdtempSync(join(tmpdir(), "anix-player-media-"));
   const mp4 = join(directory, "sample.mp4");
   const m3u8 = join(directory, "sample.m3u8");
+  const lowMp4 = join(directory, "low.mp4");
   ffmpeg([
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "lavfi", "-i", "testsrc2=size=480x270:rate=25",
@@ -27,11 +28,33 @@ async function startPlayerTestMedia(port) {
   ffmpeg([
     "-hide_banner", "-loglevel", "error", "-y", "-i", mp4,
     "-c", "copy", "-hls_time", "10", "-hls_playlist_type", "vod",
-    "-hls_segment_filename", join(directory, "segment-%03d.ts"), m3u8,
+    "-hls_segment_filename", join(directory, "segment-270-%03d.ts"),
+    join(directory, "sample-270.m3u8"),
   ]);
+  // Для меню качества нужен master-плейлист минимум с двумя разрешениями
+  ffmpeg([
+    "-hide_banner", "-loglevel", "error", "-y", "-i", mp4,
+    "-vf", "scale=320:180", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "34",
+    "-pix_fmt", "yuv420p", lowMp4,
+  ]);
+  ffmpeg([
+    "-hide_banner", "-loglevel", "error", "-y", "-i", lowMp4,
+    "-c", "copy", "-hls_time", "10", "-hls_playlist_type", "vod",
+    "-hls_segment_filename", join(directory, "segment-180-%03d.ts"),
+    join(directory, "sample-180.m3u8"),
+  ]);
+  writeFileSync(m3u8, [
+    "#EXTM3U",
+    "#EXT-X-VERSION:3",
+    "#EXT-X-STREAM-INF:BANDWIDTH=300000,RESOLUTION=320x180",
+    "sample-180.m3u8",
+    "#EXT-X-STREAM-INF:BANDWIDTH=600000,RESOLUTION=480x270",
+    "sample-270.m3u8",
+    "",
+  ].join("\n"));
   const server = createServer((request, response) => {
     const name = new URL(request.url, "http://localhost").pathname.slice(1);
-    if (!/^(sample\.(mp4|m3u8)|segment-\d+\.ts)$/.test(name)) {
+    if (!/^(sample(\-\d+)?\.m3u8|sample\.mp4|segment-(180|270)-\d+\.ts)$/.test(name)) {
       response.writeHead(404).end();
       return;
     }

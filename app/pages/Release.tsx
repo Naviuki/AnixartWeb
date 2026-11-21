@@ -137,6 +137,7 @@ export const ReleasePage = (props: any) => {
             <>
               {preferenceStore.params.experimental.newPlayer ?
                 <ReleasePlayerCustom
+                  key={`release_player_${props.id}`}
                   id={props.id}
                   token={userStore.token}
                   title={
