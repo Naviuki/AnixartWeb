@@ -251,6 +251,12 @@
   }
 }
 
+/* Открытый диалог озвучки и серий должен быть выше листа настроек:
+   у листа свой z-index (60), иначе диалог оказывается под ним */
+.media-controller media-chrome-dialog[open] {
+  z-index: 6;
+}
+
 .media-controller media-chrome-dialog > div {
   word-wrap: normal !important;
 }
