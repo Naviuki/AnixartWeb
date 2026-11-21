@@ -1,5 +1,6 @@
 // Премьера у анонса: пустая дата не должна превращаться в 1970 год.
-// Проверяются оба честных варианта — известный год и «Скоро».
+// Ответ без лицензионных площадок не должен ронять страницу релиза.
+// Проверяются оба честных варианта даты — известный год и «Скоро».
 // Нужен запущенный http://localhost:3000.
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
@@ -30,6 +31,7 @@ async function main() {
   });
   const announcements = [announcement(2027), announcement(null)];
   let variant = 0;
+  let platformResponses = 0;
 
   const profile = mkdtempSync(join(tmpdir(), "anix-release-info-"));
   const chrome = spawn(process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", [
@@ -70,7 +72,18 @@ async function main() {
       }
       if (message.method === "Fetch.requestPaused") {
         const { requestId, request } = message.params;
-        if (new URL(request.url).pathname === `/api/proxy/release/${RELEASE}`) {
+        const pathname = new URL(request.url).pathname;
+        if (pathname === `/api/proxy/release/streaming/platform/${RELEASE}`) {
+          platformResponses += 1;
+          send("Fetch.fulfillRequest", {
+            requestId,
+            responseCode: 200,
+            responseHeaders: [{ name: "Content-Type", value: "application/json" }],
+            body: Buffer.from(JSON.stringify({ code: 0 })).toString("base64"),
+          }).catch(() => {});
+          return;
+        }
+        if (pathname === `/api/proxy/release/${RELEASE}`) {
           const body = announcements[variant];
           send("Fetch.fulfillRequest", {
             requestId,
@@ -99,7 +112,7 @@ async function main() {
     };
 
     await send("Page.enable");
-    await send("Fetch.enable", { patterns: [{ urlPattern: `*api/proxy/release/${RELEASE}*` }] });
+    await send("Fetch.enable", { patterns: [{ urlPattern: `*api/proxy/release/${RELEASE}*` }, { urlPattern: `*api/proxy/release/streaming/platform/${RELEASE}*` }] });
     await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
     await send("Page.navigate", { url: `${BASE}/release/${RELEASE}` });
     await waitFor("document.readyState === 'complete'");
@@ -114,6 +127,10 @@ async function main() {
     const withYear = await evaluate(premiere);
     assert.ok(!withYear.includes("1970"), `Пустая дата показана как 1970: «${withYear}»`);
     assert.match(withYear, /2027/, `Ожидался год премьеры, получено «${withYear}»`);
+    await waitFor("document.querySelectorAll('.infocell').length > 0");
+    await sleep(500);
+    assert.ok(platformResponses > 0, "Страница запросила лицензионные площадки");
+    assert.equal(await evaluate("!!document.querySelector('.plat-row')"), false, "Без content блок площадок не рисуется и не роняет остальную информацию");
 
     // Второй ответ без года: должна остаться подпись «Скоро»
     variant = 1;
@@ -125,6 +142,7 @@ async function main() {
     assert.equal(withoutYear, "Скоро", `Без года ожидалось «Скоро», получено «${withoutYear}»`);
 
     console.log("Премьера анонса без даты:", { withYear, withoutYear });
+    console.log("Ответ без лицензионных площадок: страница релиза остаётся рабочей");
   } finally {
     ws?.close();
     chrome.kill();
