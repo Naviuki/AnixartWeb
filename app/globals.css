@@ -1891,6 +1891,11 @@ body[data-card="list"] .railrow {
   margin-bottom: 14px;
   flex-wrap: wrap;
 }
+.crumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 .crumbs a:hover {
   color: var(--t1);
 }
@@ -2054,6 +2059,13 @@ body[data-card="list"] .railrow {
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
+/* Ссылки остаются в строке, но получают удобную цель нажатия 24 px */
+.infocell-v a.accent,
+.chip a.accent {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 
 /* Полосы распределения оценок */
 .ratebars {
@@ -2144,6 +2156,9 @@ body[data-card="list"] .railrow {
   object-fit: cover;
 }
 .comment-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   font-size: 13px;
   font-weight: 700;
 }
