@@ -91,6 +91,7 @@ export async function tryCatchAPI<T, E = Error>(
         error: {
           message: "Not Found",
           code: 404,
+          httpStatus: res.status,
         },
       };
     }
@@ -102,6 +103,8 @@ export async function tryCatchAPI<T, E = Error>(
         error: {
           message: "API Returned an Error",
           code: data.code || 500,
+          // /api/proxy передаёт исходный статус в теле внешнего 500.
+          httpStatus: data.httpStatus ?? res.status,
         },
       };
     }

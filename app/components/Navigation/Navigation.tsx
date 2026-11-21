@@ -132,7 +132,7 @@ export const MobileHeader = () => {
       <Link
         href={profileHref}
         className="mhead-ava"
-        aria-label={isAuth && user?.login ? user.login : "Войти"}
+        aria-label={isAuth ? user?.login || "Аккаунт" : "Войти"}
       >
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -206,7 +206,9 @@ export const Navigation = (props: {
               "А"
             )}
           </span>
-          <span className="nav-name">{isAuth ? user?.login : "Аноним"}</span>
+          <span className="nav-name">
+            {isAuth ? user?.login || "Аккаунт" : "Аноним"}
+          </span>
         </Link>
 
         {items.map((item) => (

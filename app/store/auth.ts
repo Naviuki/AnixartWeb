@@ -48,7 +48,23 @@ export const useUserStore = create<userState>((set, get) => ({
           `${ENDPOINTS.user.profile}/${jwt.user_id}?token=${jwt.jwt}`
         );
 
-        if (error || !data.is_my_profile) {
+        if (error) {
+          const httpStatus = Number(error?.httpStatus ?? error?.code);
+          const isTemporaryError =
+            (error?.httpStatus == null && error?.code == null) ||
+            (Number.isFinite(httpStatus) && httpStatus >= 500);
+
+          if (isTemporaryError) {
+            // Сеть или временный 500 не доказывают, что токен недействителен.
+            get().login({ id: jwt.user_id }, jwt.jwt);
+          } else {
+            // Постоянный отказ API (в том числе 401/403) завершает сеанс.
+            get().logout();
+          }
+          return;
+        }
+
+        if (!data?.is_my_profile) {
           get().logout();
           return;
         }
