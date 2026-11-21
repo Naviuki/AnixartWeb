@@ -51,11 +51,14 @@ type RemoteState = {
 };
 
 // Синхронизация на аккаунте: статус профиля читается только владельцем
-export async function pullRemoteSubscriptions(token?: string) {
-  if (!token) return null;
+export async function pullRemoteSubscriptions(
+  token?: string,
+  profileId?: number
+) {
+  if (!token || !profileId) return null;
   try {
     const response = await fetch(
-      `${ENDPOINTS.user.profile}?token=${encodeURIComponent(token)}`
+      `${ENDPOINTS.user.profile}/${profileId}?token=${encodeURIComponent(token)}`
     );
     if (!response.ok) return null;
     const data = await response.json();

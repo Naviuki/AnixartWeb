@@ -68,6 +68,7 @@ async function loadBookmarks(token?: string): Promise<BookmarkItem[]> {
 
 export const NotificationsBridge = () => {
   const token = useUserStore((store) => store.token);
+  const profileId = useUserStore((store) => store.user?.id);
   const isAuth = useUserStore((store) => store.isAuth);
   const hydrated = useUserStore((store) => store._hasHydrated);
   // 401/500 по профилю запоминаем, чтобы не повторять запрос каждый рендер
@@ -90,8 +91,8 @@ export const NotificationsBridge = () => {
 
     (async () => {
       // 1. Что изменилось на аккаунте с прошлого запуска
-      if (isAuth && token && hydrated && !remoteFailed.current) {
-        const remote = await pullRemoteSubscriptions(token);
+      if (isAuth && token && profileId && hydrated && !remoteFailed.current) {
+        const remote = await pullRemoteSubscriptions(token, profileId);
         if (alive && remote === null) remoteFailed.current = true;
         if (alive && remote?.subs) {
           const local = useNotificationsStore.getState().subs;
@@ -152,7 +153,7 @@ export const NotificationsBridge = () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuth, token, autoFavorites, autoWatched]);
+  }, [isAuth, token, profileId, autoFavorites, autoWatched]);
 
   return null;
 };
