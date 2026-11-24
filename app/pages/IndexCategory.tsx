@@ -23,40 +23,58 @@ export function IndexCategoryPage(props) {
   const token = useUserStore((state) => state.token);
   const [isLoading, setIsLoading] = useState(true);
   const [content, setContent] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [page, setPage] = useState(0);
   const router = useRouter();
 
-  useEffect(() => {
-    async function _loadInitialReleases() {
-      setIsLoading(true);
-      setContent(null);
+  async function loadInitialReleases() {
+    setIsLoading(true);
+    setContent(null);
+    setLoadError("");
 
-      const [data] = await FetchFilter(
-        slugToFilter[props.slug].filter,
-        page,
-        token
+    const [data, error] = await FetchFilter(
+      slugToFilter[props.slug].filter,
+      page,
+      token
+    );
+
+    if (error || !Array.isArray(data?.content)) {
+      setLoadError(
+        "Не удалось получить список релизов. Сервис мог быть временно недоступен."
       );
-
-      setContent(data.content);
       setIsLoading(false);
+      return;
     }
 
-    _loadInitialReleases();
+    setContent(data.content);
+    setIsLoading(false);
+  }
+
+  useEffect(() => {
+    loadInitialReleases();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  useEffect(() => {
-    async function _loadNextReleasesPage() {
-      const [data] = await FetchFilter(
-        slugToFilter[props.slug].filter,
-        page,
-        token
-      );
-      const newContent = [...content, ...data.content];
-      setContent(newContent);
+  async function loadNextReleasesPage() {
+    setLoadError("");
+    const [data, error] = await FetchFilter(
+      slugToFilter[props.slug].filter,
+      page,
+      token
+    );
+
+    if (error || !Array.isArray(data?.content)) {
+      setLoadError("Не удалось загрузить следующую страницу.");
+      return;
     }
+
+    const newContent = [...content, ...data.content];
+    setContent(newContent);
+  }
+
+  useEffect(() => {
     if (content) {
-      _loadNextReleasesPage();
+      loadNextReleasesPage();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
@@ -99,6 +117,17 @@ export function IndexCategoryPage(props) {
           <Spinner />
           <p>Загружаем релизы</p>
         </div>
+      : loadError ?
+        <div className="empty" role="alert">
+          <span className="empty-ic">
+            <Icon name="refresh" size={32} />
+          </span>
+          <div className="empty-t">Ошибка загрузки</div>
+          <p>{loadError}</p>
+          <button type="button" className="btn" onClick={loadInitialReleases}>
+            Повторить
+          </button>
+        </div>
       : <div className="empty">
           <span className="empty-ic">
             <Icon name="film" size={32} />
@@ -110,7 +139,17 @@ export function IndexCategoryPage(props) {
         </div>
       }
 
-      {content && content.length > 0 && (
+      {content && content.length > 0 && loadError && (
+        <div className="empty" role="alert">
+          <div className="empty-t">Ошибка загрузки</div>
+          <p>{loadError}</p>
+          <button type="button" className="btn" onClick={loadNextReleasesPage}>
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {content && content.length > 0 && !loadError && (
         <button
           type="button"
           className="btn g"
